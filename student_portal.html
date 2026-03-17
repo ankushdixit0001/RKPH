@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portal — RKPH Inter College</title>
+<link rel="stylesheet" href="student_portal.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="sp-header" id="spHeader">
+  <div class="sp-header-inner">
+    <a href="rkph_college.html" class="sp-logo">
+      <div class="sp-logo-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div><strong>RKPH Inter College</strong><span>Student Portal</span></div>
+    </a>
+    <nav class="sp-nav" id="spNav">
+      <a class="sp-nav-link active" data-sec="login"        href="#login"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
+      <a class="sp-nav-link"        data-sec="results"      href="#results"><i class="fas fa-chart-bar"></i><span>Results</span></a>
+      <a class="sp-nav-link"        data-sec="timetable"    href="#timetable"><i class="fas fa-clock"></i><span>Timetable</span></a>
+      <a class="sp-nav-link sp-nav-auth" data-sec="fees"        href="#fees"><i class="fas fa-rupee-sign"></i><span>Fees</span></a>
+      <a class="sp-nav-link sp-nav-auth" data-sec="attendance"  href="#attendance"><i class="fas fa-calendar-check"></i><span>Attendance</span></a>
+      <a class="sp-nav-link sp-nav-auth" data-sec="portal"      href="#portal"><i class="fas fa-th-large"></i><span>Portal</span></a>
+      <a class="sp-nav-link sp-nav-auth" data-sec="certificates" href="#certificates"><i class="fas fa-certificate"></i><span>Certificates</span></a>
+    </nav>
+    <div class="sp-header-right">
+      <div class="sp-user-badge" id="spUserBadge" style="display:none">
+        <div class="sp-user-dot"><i class="fas fa-user"></i></div>
+        <span id="spUserName"></span>
+        <button onclick="doLogout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+      <a href="rkph_college.html" class="sp-back-btn"><i class="fas fa-arrow-left"></i><span> Main Site</span></a>
+      <button class="sp-hamburger" id="spHamburger" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="sp-main">
+
+<!-- ══════════════════════════════════════
+     §1  LOGIN
+══════════════════════════════════════ -->
+<section id="login" class="sp-section">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip"><i class="fas fa-lock"></i> Secure Login</span>
+      <h2>Student Login</h2>
+      <p>Sign in to access fees, attendance, certificates &amp; your profile</p>
+    </div>
+    <div class="login-grid">
+      <div class="g-card login-card" id="loginCard">
+        <div class="login-avatar-wrap">
+          <div class="login-avatar"><i class="fas fa-user-graduate"></i></div>
+          <h3>Welcome Back</h3>
+          <p>RKPH Student Portal</p>
+        </div>
+        <!-- Form -->
+        <div id="loginFormWrap" class="login-form-wrap">
+          <div class="sp-field">
+            <label><i class="fas fa-id-card"></i> Roll Number</label>
+            <input id="loginRoll" type="text" class="sp-input" placeholder="e.g. RKPH2024001" autocomplete="off"
+              onkeydown="if(event.key==='Enter')doLogin()">
+          </div>
+          <div class="sp-field">
+            <label><i class="fas fa-lock"></i> Password</label>
+            <div class="sp-input-row">
+              <input id="loginPass" type="password" class="sp-input" placeholder="Enter your password"
+                onkeydown="if(event.key==='Enter')doLogin()">
+              <button type="button" class="sp-eye-btn" onclick="togglePass()"><i class="fas fa-eye" id="eyeIcon"></i></button>
+            </div>
+          </div>
+          <div class="login-row">
+            <label class="sp-check"><input type="checkbox" id="rememberMe"> Remember me</label>
+            <a href="#" class="sp-link" onclick="showToast('Password reset: contact office at +91 95571 45962','info');return false">Forgot Password?</a>
+          </div>
+          <button class="sp-btn-primary full-w" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+          <div class="login-demo-hint"><i class="fas fa-info-circle"></i>
+            Demo — Roll: <kbd>RKPH2024001</kbd> &nbsp; Pass: <kbd>student123</kbd>
+          </div>
+        </div>
+        <!-- Post-login dashboard -->
+        <div id="loginDashboard" style="display:none">
+          <div class="dash-welcome-bar">
+            <div class="dw-avatar"><i class="fas fa-user-graduate"></i></div>
+            <div class="dw-info">
+              <strong id="dashName"></strong>
+              <span id="dashMeta"></span>
+            </div>
+          </div>
+          <div class="dash-tiles">
+            <a class="dash-tile" href="#fees"         onclick="gotoSection('fees')"><i class="fas fa-rupee-sign"></i><span>Fees</span></a>
+            <a class="dash-tile" href="#attendance"   onclick="gotoSection('attendance')"><i class="fas fa-calendar-check"></i><span>Attendance</span></a>
+            <a class="dash-tile" href="#results"      onclick="gotoSection('results')"><i class="fas fa-chart-bar"></i><span>Results</span></a>
+            <a class="dash-tile" href="#timetable"    onclick="gotoSection('timetable')"><i class="fas fa-clock"></i><span>Timetable</span></a>
+            <a class="dash-tile" href="#certificates" onclick="gotoSection('certificates')"><i class="fas fa-certificate"></i><span>Certificates</span></a>
+            <a class="dash-tile" href="#portal"       onclick="gotoSection('portal')"><i class="fas fa-th-large"></i><span>Profile</span></a>
+          </div>
+          <button class="sp-btn-outline full-w mt1" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+      </div>
+      <div class="login-info-col">
+        <div class="g-card login-info-card"><div class="lic-icon teal"><i class="fas fa-shield-alt"></i></div><div><h4>Secure &amp; Private</h4><p>Your data is protected. Only you and authorised staff can access your information.</p></div></div>
+        <div class="g-card login-info-card"><div class="lic-icon amber"><i class="fas fa-bell"></i></div><div><h4>Live Notifications</h4><p>Get instant alerts for results, fee reminders, attendance updates and school notices.</p></div></div>
+        <div class="g-card login-info-card"><div class="lic-icon rose"><i class="fas fa-mobile-alt"></i></div><div><h4>Mobile Friendly</h4><p>Access your portal on any device — phone, tablet or desktop — anytime.</p></div></div>
+        <div class="g-card login-info-card"><div class="lic-icon white"><i class="fas fa-unlock-alt"></i></div><div><h4>Public Access</h4><p><strong>Results</strong> &amp; <strong>Timetable</strong> are publicly accessible without login.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     §2  RESULTS  (public)
+══════════════════════════════════════ -->
+<section id="results" class="sp-section alt">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip sp-chip-public"><i class="fas fa-unlock"></i> Public Access</span>
+      <h2>Results</h2>
+      <p>Search by student name OR roll number — no login required</p>
+    </div>
+    <div class="g-card res-search-bar">
+      <div class="sp-field grow">
+        <label>Student Name or Roll Number</label>
+        <input id="resQuery" type="text" class="sp-input" placeholder="e.g. Rahul Kumar  or  RKPH2024001"
+          onkeydown="if(event.key==='Enter')searchResult()">
+      </div>
+      <div class="sp-field">
+        <label>Class</label>
+        <select id="resClass" class="sp-input">
+          <option value="">All Classes</option>
+          <option value="9">Class 9</option>
+          <option value="10">Class 10</option>
+          <option value="11">Class 11</option>
+          <option value="12">Class 12</option>
+        </select>
+      </div>
+      <div class="sp-field">
+        <label>Examination</label>
+        <select id="resExam" class="sp-input">
+          <option value="">Select Exam</option>
+          <option>Half Yearly 2024</option>
+          <option>Annual 2024</option>
+          <option>Pre-Board 2025</option>
+        </select>
+      </div>
+      <button class="sp-btn-primary self-end" onclick="searchResult()"><i class="fas fa-search"></i> Search</button>
+    </div>
+    <!-- Result card -->
+    <div id="resultOutput" style="display:none">
+      <div class="g-card res-info-bar">
+        <div class="rib-left">
+          <div class="rib-avatar"><i class="fas fa-user-graduate"></i></div>
+          <div><h3 id="resName">–</h3><p id="resMeta">–</p></div>
+        </div>
+        <div class="rib-right">
+          <div class="rib-badge" id="resPct">–</div>
+          <div class="rib-badge pass" id="resGrade">–</div>
+        </div>
+      </div>
+      <div class="res-marks-grid" id="resMarksGrid"></div>
+      <div class="g-card res-summary" id="resSummary"></div>
+      <div class="res-actions">
+        <button class="sp-btn-primary" onclick="downloadMarksheet()"><i class="fas fa-download"></i> Download Marksheet</button>
+        <button class="sp-btn-outline" onclick="printMarksheet()"><i class="fas fa-print"></i> Print</button>
+      </div>
+    </div>
+    <!-- Quick shortcuts -->
+    <div class="res-quick-row">
+      <h4 class="res-quick-label">Quick Access — Recent Results</h4>
+      <div class="res-quick-grid" id="resQuickGrid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     §3  TIMETABLE  (public)
+══════════════════════════════════════ -->
+<section id="timetable" class="sp-section">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip sp-chip-public"><i class="fas fa-unlock"></i> Public Access</span>
+      <h2>Time Table</h2>
+      <p>Weekly class schedule and exam dates — no login required</p>
+    </div>
+    <div class="tt-topbar">
+      <div class="tt-tabs">
+        <button class="tt-tab active" onclick="switchTT(this,'weekly')"><i class="fas fa-calendar-week"></i> Weekly</button>
+        <button class="tt-tab" onclick="switchTT(this,'exam')"><i class="fas fa-file-alt"></i> Exam Schedule</button>
+      </div>
+      <div class="tt-topbar-right">
+        <select class="sp-input compact" id="ttClassSelect" onchange="changeTTClass(this.value)">
+          <option value="11">Class 11 – Science</option>
+          <option value="12">Class 12 – Science</option>
+          <option value="10">Class 10</option>
+          <option value="9">Class 9</option>
+        </select>
+        <button class="sp-btn-outline" onclick="downloadTimetable()"><i class="fas fa-download"></i> Download</button>
+      </div>
+    </div>
+    <div class="g-card tt-today-card">
+      <div class="tt-today-header">
+        <h4><i class="fas fa-sun"></i> Today's Schedule</h4>
+        <span id="todayDateStr" class="tt-today-date"></span>
+      </div>
+      <div id="todaySchedule" class="tt-today-slots"></div>
+    </div>
+    <div id="ttWeeklyWrap" class="g-card tt-scroll-card">
+      <div class="tt-scroll"><table id="weeklyTable" class="sp-table tt-table"></table></div>
+    </div>
+    <div id="ttExamWrap" class="g-card tt-scroll-card" style="display:none">
+      <div class="tt-scroll"><table id="examTable" class="sp-table tt-table"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     §4  FEE MANAGEMENT  (auth)
+══════════════════════════════════════ -->
+<section id="fees" class="sp-section alt sp-protected">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip"><i class="fas fa-rupee-sign"></i> Finance</span>
+      <h2>Fee Management</h2>
+      <p>View fee schedule, payment history and pay pending dues</p>
+    </div>
+    <div class="fee-summary-row">
+      <div class="g-card fee-stat teal"><div class="fstat-icon"><i class="fas fa-check-circle"></i></div><div><p>Total Paid</p><h3>₹18,500</h3></div></div>
+      <div class="g-card fee-stat rose"><div class="fstat-icon"><i class="fas fa-exclamation-circle"></i></div><div><p>Pending Dues</p><h3>₹4,500</h3></div></div>
+      <div class="g-card fee-stat amber"><div class="fstat-icon"><i class="fas fa-calendar-alt"></i></div><div><p>Next Due Date</p><h3>15 Apr</h3></div></div>
+      <div class="g-card fee-stat white"><div class="fstat-icon"><i class="fas fa-receipt"></i></div><div><p>Session</p><h3>2024–25</h3></div></div>
+    </div>
+    <div class="fees-bottom-row">
+      <div class="g-card fee-table-card">
+        <div class="fee-table-topbar">
+          <h4><i class="fas fa-list"></i> Fee Schedule — 2024-25 <em>Class 11 Science</em></h4>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="sp-input compact" onchange="filterFees(this.value)">
+              <option value="all">All Terms</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="upcoming">Upcoming</option>
+            </select>
+            <button class="sp-btn-outline" style="padding:7px 14px;font-size:0.8rem" onclick="downloadFeeStatement()"><i class="fas fa-download"></i> Statement</button>
+          </div>
+        </div>
+        <div class="fee-table-scroll">
+          <table class="sp-table"><thead><tr><th>Quarter</th><th>Fee Type</th><th>Amount</th><th>Due Date</th><th>Paid On</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="feeTableBody"></tbody></table>
+        </div>
+      </div>
+      <div class="g-card fee-pay-card">
+        <h4><i class="fas fa-credit-card"></i> Pay Pending Fees</h4>
+        <div class="fee-due-list">
+          <div class="fee-due-row"><span>Q3 Tuition Fee</span><strong>₹3,000</strong></div>
+          <div class="fee-due-row"><span>Q3 Development Fee</span><strong>₹1,500</strong></div>
+        </div>
+        <div class="fee-total-row"><span>Total Due</span><strong>₹4,500</strong></div>
+        <div class="pay-method-tabs">
+          <button class="pmt active" onclick="selectPay(this,'upi')"><i class="fas fa-mobile-alt"></i>UPI</button>
+          <button class="pmt" onclick="selectPay(this,'card')"><i class="fas fa-credit-card"></i>Card</button>
+          <button class="pmt" onclick="selectPay(this,'bank')"><i class="fas fa-university"></i>Bank</button>
+        </div>
+        <div id="payInputArea"><input type="text" class="sp-input" placeholder="Enter UPI ID (e.g. name@upi)" style="margin-bottom:0.5rem"></div>
+        <button class="sp-btn-primary full-w" onclick="showToast('Payment gateway integration required for live use.','info')"><i class="fas fa-lock"></i> Pay ₹4,500 Securely</button>
+        <p class="pay-ssl-note"><i class="fas fa-shield-alt"></i> 256-bit SSL encrypted</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     §5  ATTENDANCE  (auth)
+══════════════════════════════════════ -->
+<section id="attendance" class="sp-section sp-protected">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip"><i class="fas fa-calendar-check"></i> Academic</span>
+      <h2>Attendance</h2>
+      <p>Monthly calendar, subject-wise records and attendance summary</p>
+    </div>
+    <div class="att-stats-row">
+      <div class="g-card att-big-card">
+        <div class="att-donut-wrap">
+          <svg viewBox="0 0 100 100" class="att-donut">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--teal)" stroke-width="9"
+              stroke-dasharray="263.9" stroke-dashoffset="34.3" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+          </svg>
+          <div class="att-donut-label"><strong>87%</strong><span>Overall</span></div>
+        </div>
+        <p class="att-min-note"><i class="fas fa-info-circle"></i> Min. 75% required</p>
+      </div>
+      <div class="att-mini-row">
+        <div class="g-card att-mini teal"><i class="fas fa-calendar-check"></i><div><span>Present</span><strong>156</strong></div></div>
+        <div class="g-card att-mini rose"><i class="fas fa-calendar-times"></i><div><span>Absent</span><strong>23</strong></div></div>
+        <div class="g-card att-mini amber"><i class="fas fa-calendar-minus"></i><div><span>Late</span><strong>8</strong></div></div>
+        <div class="g-card att-mini white"><i class="fas fa-calendar"></i><div><span>Working Days</span><strong>187</strong></div></div>
+      </div>
+    </div>
+    <div class="att-bottom-row">
+      <div class="g-card att-cal-card">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+          <h4 id="calMonthTitle">March 2025</h4>
+          <button class="cal-nav-btn" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="cal-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+        <div class="cal-body" id="calBody"></div>
+        <div class="cal-legend">
+          <span><i class="fas fa-circle" style="color:var(--teal)"></i> Present</span>
+          <span><i class="fas fa-circle" style="color:var(--rose)"></i> Absent</span>
+          <span><i class="fas fa-circle" style="color:var(--amber)"></i> Late</span>
+          <span><i class="fas fa-circle" style="color:rgba(255,255,255,0.2)"></i> Holiday</span>
+        </div>
+      </div>
+      <div class="g-card att-subj-card">
+        <div class="att-subj-header">
+          <h4><i class="fas fa-book-open"></i> Subject-wise Attendance</h4>
+          <button class="sp-btn-outline" style="padding:6px 14px;font-size:0.78rem" onclick="downloadAttendance()"><i class="fas fa-download"></i> Report</button>
+        </div>
+        <div id="subjAttendList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     §6  STUDENT PORTAL/PROFILE  (auth)
+══════════════════════════════════════ -->
+<section id="portal" class="sp-section alt sp-protected">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip"><i class="fas fa-th-large"></i> Dashboard</span>
+      <h2>Student Portal</h2>
+      <p>Your profile, notices, assignments and study resources</p>
+    </div>
+    <div class="portal-grid">
+      <div class="portal-left-col">
+        <div class="g-card portal-profile-card">
+          <div class="ppc-avatar"><i class="fas fa-user-graduate"></i></div>
+          <h3 id="ppcName">–</h3>
+          <p class="ppc-roll" id="ppcRoll">–</p>
+          <div class="ppc-tags" id="ppcTags"></div>
+          <div class="ppc-divider"></div>
+          <div class="ppc-details">
+            <div class="ppc-row"><i class="fas fa-birthday-cake"></i><span id="ppcDob">–</span></div>
+            <div class="ppc-row"><i class="fas fa-phone"></i><span id="ppcPhone">–</span></div>
+            <div class="ppc-row"><i class="fas fa-envelope"></i><span id="ppcEmail">–</span></div>
+            <div class="ppc-row"><i class="fas fa-map-marker-alt"></i><span id="ppcAddr">–</span></div>
+            <div class="ppc-row"><i class="fas fa-user-tie"></i><span id="ppcFather">–</span></div>
+            <div class="ppc-row"><i class="fas fa-phone-alt"></i><span id="ppcFPhone">–</span></div>
+          </div>
+          <button class="sp-btn-outline full-w mt1" onclick="downloadIDCard()"><i class="fas fa-id-card"></i> Download ID Card</button>
+        </div>
+        <div class="g-card portal-quick-stats">
+          <h4><i class="fas fa-tachometer-alt"></i> Quick Stats</h4>
+          <div class="pqs-list">
+            <div class="pqs-row"><span>Last Exam Score</span><strong class="teal">82.4%</strong></div>
+            <div class="pqs-row"><span>Attendance</span><strong class="teal">87%</strong></div>
+            <div class="pqs-row"><span>Pending Fees</span><strong class="rose">₹4,500</strong></div>
+            <div class="pqs-row"><span>Assignments Due</span><strong class="amber">3</strong></div>
+            <div class="pqs-row"><span>Class Rank</span><strong>7 / 56</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="portal-right-col">
+        <div class="g-card portal-notices">
+          <div class="panel-header">
+            <h4><i class="fas fa-bullhorn"></i> Notice Board</h4>
+            <span class="notif-badge">3 New</span>
+          </div>
+          <div id="noticeList" class="notice-list"></div>
+        </div>
+        <div class="g-card portal-assignments">
+          <div class="panel-header">
+            <h4><i class="fas fa-tasks"></i> Assignments</h4>
+            <span class="sp-link">View All</span>
+          </div>
+          <div id="assignList" class="assign-list"></div>
+        </div>
+        <div class="portal-resources-row">
+          <div class="g-card res-tile" onclick="downloadStudyMaterial()"><div class="rt-icon teal"><i class="fas fa-file-pdf"></i></div><div><strong>Study Material</strong><p>Chapter PDFs &amp; Notes</p></div><i class="fas fa-download rt-arrow"></i></div>
+          <div class="g-card res-tile" onclick="showToast('Video lectures portal opening soon','info')"><div class="rt-icon amber"><i class="fas fa-play-circle"></i></div><div><strong>Video Lectures</strong><p>12 New Videos</p></div><i class="fas fa-arrow-right rt-arrow"></i></div>
+          <div class="g-card res-tile" onclick="downloadPreviousPapers()"><div class="rt-icon rose"><i class="fas fa-file-alt"></i></div><div><strong>Previous Papers</strong><p>2020 – 2024</p></div><i class="fas fa-download rt-arrow"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     §7  CERTIFICATES  (auth)
+══════════════════════════════════════ -->
+<section id="certificates" class="sp-section sp-protected">
+  <div class="sp-container">
+    <div class="sp-section-head">
+      <span class="sp-chip"><i class="fas fa-certificate"></i> Documents</span>
+      <h2>Certificates</h2>
+      <p>Download issued certificates or request new official documents</p>
+    </div>
+    <div class="cert-layout">
+      <div class="cert-grid" id="certGrid"></div>
+      <div class="g-card cert-req-form">
+        <h4><i class="fas fa-plus-circle"></i> Request New Certificate</h4>
+        <div class="sp-field"><label>Certificate Type</label>
+          <select class="sp-input" id="certType">
+            <option>Character Certificate</option>
+            <option>Bonafide Certificate</option>
+            <option>Transfer Certificate</option>
+            <option>Migration Certificate</option>
+            <option>Sports Certificate</option>
+          </select>
+        </div>
+        <div class="sp-field"><label>Purpose</label>
+          <input type="text" id="certPurpose" class="sp-input" placeholder="e.g. Higher Education, Job Application">
+        </div>
+        <div class="sp-field"><label>Required By</label>
+          <input type="date" id="certDate" class="sp-input">
+        </div>
+        <div class="sp-field"><label>Additional Notes</label>
+          <textarea id="certNotes" class="sp-input" rows="3" placeholder="Any specific requirements…"></textarea>
+        </div>
+        <button class="sp-btn-primary full-w" onclick="submitCertRequest()"><i class="fas fa-paper-plane"></i> Submit Request</button>
+        <p class="cert-process-note"><i class="fas fa-clock"></i> Processing: 2–3 working days</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="sp-footer">
+  <div class="sp-container">
+    <p><strong>Ram Krishna Paramhans Inter College</strong> — Student Management Portal</p>
+    <p>Bajaj Bagh, Nangal (Nagal), Saharanpur, UP 247551 &nbsp;|&nbsp; +91 95571 45962</p>
+    <a href="rkph_college.html"><i class="fas fa-arrow-left"></i> Back to Main Website</a>
+  </div>
+</footer>
+
+<div id="spToast" class="sp-toast" style="display:none"></div>
+<script src="student_portal.js"></script>
+</body>
+</html>
