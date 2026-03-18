@@ -14,8 +14,11 @@
         <div class="header-main">
             <div class="container">
                 <div class="logo">
-                    <h1>RKPH Inter College</h1>
-                    <p>Nagal, Saharanpur</p>
+                    <div class="logo-icon-box"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="logo-text">
+                        <h1>RKPH Inter College</h1>
+                        <p>Nagal, Saharanpur</p>
+                    </div>
                 </div>
                 <nav class="nav-menu">
                     <ul>
@@ -87,7 +90,10 @@
     <section id="about" class="about">
         <div class="container">
             <div class="about-content">
-                <h2>About Our College</h2>
+                <div style="text-align:center">
+                    <div class="sec-eyebrow"><i class="fas fa-university"></i> Who We Are</div>
+                    <h2>About Our College</h2>
+                </div>
                 <div class="about-grid">
                     <div class="about-text">
                         <h3>Our Legacy</h3>
@@ -135,6 +141,7 @@
     <!-- Academics Section -->
     <section id="academics" class="academics">
         <div class="container">
+            <div class="sec-eyebrow"><i class="fas fa-book-open"></i> Courses Offered</div>
             <h2>Academic Programs</h2>
             <div class="academics-grid">
                 <div class="academic-card">
@@ -173,6 +180,7 @@
     <!-- Facilities Section -->
     <section id="facilities" class="facilities">
         <div class="container">
+            <div class="sec-eyebrow"><i class="fas fa-building"></i> Infrastructure</div>
             <h2>Facilities &amp; Infrastructure</h2>
             <div class="facilities-grid">
                 <div class="facility-card">
@@ -213,6 +221,7 @@
     <section id="admissions" class="admissions">
         <div class="container">
             <div class="admissions-content">
+                <div class="sec-eyebrow"><i class="fas fa-user-plus"></i> Enroll Now</div>
                 <h2>Admissions</h2>
                 <p>Join our family and embark on a journey of academic excellence and personal growth.</p>
                 <div class="admission-process">
@@ -257,10 +266,45 @@
         </div>
     </section>
 
+    <!-- Student Portal CTA -->
+    <section id="student-portal-cta" class="portal-cta-section">
+        <div class="container">
+            <div class="portal-cta-card glass-strong">
+                <div class="portal-cta-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div class="portal-cta-text">
+                    <h2>Student Management Portal</h2>
+                    <p>Access your results, fee records, attendance, timetable, certificates and more — all in one secure place.</p>
+                    <div class="portal-cta-features">
+                        <span><i class="fas fa-chart-bar"></i> Results</span>
+                        <span><i class="fas fa-rupee-sign"></i> Fee Management</span>
+                        <span><i class="fas fa-calendar-check"></i> Attendance</span>
+                        <span><i class="fas fa-clock"></i> Timetable</span>
+                        <span><i class="fas fa-certificate"></i> Certificates</span>
+                        <span><i class="fas fa-th-large"></i> Student Portal</span>
+                    </div>
+                </div>
+                <a href="student_portal.html" class="btn-primary portal-cta-btn">
+                    <i class="fas fa-sign-in-alt"></i> Open Student Portal
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Anchor stubs so old nav links redirect gracefully -->
+    <span id="login"></span>
+    <span id="results"></span>
+    <span id="fees"></span>
+    <span id="attendance"></span>
+    <span id="portal"></span>
+    <span id="certificates"></span>
+    <span id="timetable"></span>
+    
     <!-- Gallery Section -->
     <section id="gallery" class="gallery">
         <div class="container">
+            <div class="sec-eyebrow"><i class="fas fa-images"></i> Campus Life</div>
             <h2>Gallery</h2>
+            <p class="sec-subtitle">A glimpse into our vibrant campus, classrooms, labs, and student activities</p>
             <div class="gallery-grid">
                 <div class="gallery-item">
                     <i class="fas fa-school gallery-icon"></i>
@@ -293,6 +337,7 @@
     <!-- Contact Section -->
     <section id="contact" class="contact">
         <div class="container">
+            <div class="sec-eyebrow"><i class="fas fa-map-marker-alt"></i> Get In Touch</div>
             <h2>Contact Us</h2>
             <div class="contact-content">
                 <div class="contact-info">
@@ -320,7 +365,7 @@
                 </div>
                 <div class="contact-form">
                     <h3>Send us a Message</h3>
-                    <form>
+                    <form id="contactForm" onsubmit="handleContactSubmit(event)">
                         <div class="form-group">
                             <input type="text" placeholder="Your Name" required>
                         </div>
@@ -345,7 +390,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>Ram Krishna Paramhans Inter College</h3>
+                    <h3><i class="fas fa-graduation-cap footer-brand-icon"></i> Ram Krishna Paramhans Inter College</h3>
                     <p>Excellence in Education &bull; Character Building &bull; Holistic Development</p>
                     <p style="margin-top:0.5rem;font-size:0.82rem;">Bajaj Bagh, Nangal (Nagal), Saharanpur, UP 247551</p>
                     <div class="social-links">
@@ -384,38 +429,14 @@
     </footer>
 
 
-    <!-- Student Portal CTA -->
-    <section id="student-portal-cta" class="portal-cta-section">
-        <div class="container">
-            <div class="portal-cta-card glass-strong">
-                <div class="portal-cta-icon"><i class="fas fa-graduation-cap"></i></div>
-                <div class="portal-cta-text">
-                    <h2>Student Management Portal</h2>
-                    <p>Access your results, fee records, attendance, timetable, certificates and more — all in one secure place.</p>
-                    <div class="portal-cta-features">
-                        <span><i class="fas fa-chart-bar"></i> Results</span>
-                        <span><i class="fas fa-rupee-sign"></i> Fee Management</span>
-                        <span><i class="fas fa-calendar-check"></i> Attendance</span>
-                        <span><i class="fas fa-clock"></i> Timetable</span>
-                        <span><i class="fas fa-certificate"></i> Certificates</span>
-                        <span><i class="fas fa-th-large"></i> Student Portal</span>
-                    </div>
-                </div>
-                <a href="student_portal.html" class="btn-primary portal-cta-btn">
-                    <i class="fas fa-sign-in-alt"></i> Open Student Portal
-                </a>
-            </div>
-        </div>
-    </section>
 
-    <!-- Anchor stubs so old nav links redirect gracefully -->
-    <span id="login"></span>
-    <span id="results"></span>
-    <span id="fees"></span>
-    <span id="attendance"></span>
-    <span id="portal"></span>
-    <span id="certificates"></span>
-    <span id="timetable"></span>
+    <!-- Scroll to top -->
+    <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Toast notification -->
+    <div class="main-toast" id="mainToast"></div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -501,7 +522,37 @@
             });
         }, { threshold: 0.25 });
         document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+        // Active on load
+        const homeLink = document.querySelector('.nav-menu a[href="#home"]');
+        if (homeLink) homeLink.classList.add('active');
+
+        // Scroll-to-top button
+        const scrollBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', () => {
+            if (scrollBtn) scrollBtn.classList.toggle('visible', window.scrollY > 400);
+        }, { passive: true });
     });
+
+    // Contact form submit
+    function handleContactSubmit(e) {
+        e.preventDefault();
+        showMainToast('Message sent! We\'ll get back to you soon.', 'success');
+        e.target.reset();
+    }
+
+    // Toast system for main site
+    let _toastTimer = null;
+    function showMainToast(msg, type) {
+        const el = document.getElementById('mainToast');
+        if (!el) return;
+        const colors = { success: '#4fc3c3', error: '#e86b8a', info: '#f5c842' };
+        const icons  = { success: 'check-circle', error: 'times-circle', info: 'info-circle' };
+        clearTimeout(_toastTimer);
+        el.style.borderColor = colors[type] || colors.info;
+        el.innerHTML = `<i class="fas fa-${icons[type]||'info-circle'}" style="color:${colors[type]||colors.info};flex-shrink:0"></i><span>${msg}</span>`;
+        el.classList.add('show');
+        _toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+    }
 
     function downloadAdmissionForm() {
         const html = `<!DOCTYPE html>

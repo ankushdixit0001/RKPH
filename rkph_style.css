@@ -89,12 +89,26 @@ body::after {
   display:flex; justify-content:space-between; align-items:center;
   gap:1rem; padding:0.9rem 24px;
 }
-.logo h1 {
-  font-family: 'Cormorant Garamond', 'Georgia', serif;
-  font-size: 1.65rem; font-weight:600; color:var(--text-bright);
-  letter-spacing:-0.01em; white-space:nowrap; line-height:1.2;
+.logo {
+  display:flex; align-items:center; gap:12px; text-decoration:none; flex-shrink:0;
 }
-.logo p { font-size:0.78rem; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-top:2px; }
+.logo-icon-box {
+  width:38px; height:38px; border-radius:10px; flex-shrink:0;
+  background:rgba(79,195,195,0.14); border:1px solid rgba(79,195,195,0.30);
+  border-top-color:rgba(79,195,195,0.50);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.1rem; color:var(--accent-teal);
+  box-shadow:0 0 18px rgba(79,195,195,0.12);
+  transition:all 0.25s ease;
+}
+.logo:hover .logo-icon-box { background:rgba(79,195,195,0.22); box-shadow:0 0 26px rgba(79,195,195,0.22); }
+.logo-text { display:flex; flex-direction:column; }
+.logo h1 {
+  font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+  font-size: 1.25rem; font-weight:700; color:var(--text-bright);
+  letter-spacing:-0.01em; white-space:nowrap; line-height:1.15;
+}
+.logo p { font-size:0.72rem; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-top:1px; }
 
 /* Nav */
 .nav-menu ul { display:flex; list-style:none; gap:4px; align-items:center; flex-wrap:wrap; }
@@ -696,4 +710,73 @@ section { padding:100px 0; }
     .portal-cta-card { flex-direction: column; text-align: center; padding: 2rem; }
     .portal-cta-features { justify-content: center; }
     .portal-cta-btn { width: 100%; justify-content: center; }
+}
+
+/* ── SECTION EYEBROW CHIP ── */
+.sec-eyebrow {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:5px 16px; border-radius:999px;
+  background:rgba(79,195,195,0.10); border:1px solid rgba(79,195,195,0.22);
+  border-top-color:rgba(79,195,195,0.40);
+  font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--accent-teal); margin-bottom:1rem;
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+}
+.sec-eyebrow i { font-size:0.68rem; }
+/* Per-section accent colours */
+.academics .sec-eyebrow, .admissions .sec-eyebrow {
+  background:rgba(245,200,66,0.10); border-color:rgba(245,200,66,0.22);
+  border-top-color:rgba(245,200,66,0.40); color:var(--accent-amber);
+}
+.gallery .sec-eyebrow, .contact .sec-eyebrow {
+  background:rgba(232,107,138,0.10); border-color:rgba(232,107,138,0.22);
+  border-top-color:rgba(232,107,138,0.40); color:var(--accent-rose);
+}
+
+/* Section subtitle */
+.sec-subtitle {
+  font-size:0.95rem; color:var(--text-muted); text-align:center;
+  max-width:560px; margin:0 auto 3rem; line-height:1.65;
+}
+
+/* ── FOOTER BRAND ICON ── */
+.footer-brand-icon {
+  color:var(--accent-teal); font-size:1rem; margin-right:2px;
+  vertical-align:middle;
+}
+
+/* ── SCROLL TO TOP BUTTON ── */
+.scroll-top-btn {
+  position:fixed; bottom:28px; right:28px; z-index:999;
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(79,195,195,0.15);
+  border:1px solid rgba(79,195,195,0.30); border-top-color:rgba(79,195,195,0.55);
+  color:var(--accent-teal); font-size:0.95rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  box-shadow:0 4px 20px rgba(0,0,0,0.45), 0 0 16px rgba(79,195,195,0.12);
+  opacity:0; visibility:hidden; transform:translateY(12px);
+  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.scroll-top-btn.visible { opacity:1; visibility:visible; transform:translateY(0); }
+.scroll-top-btn:hover {
+  background:rgba(79,195,195,0.25); transform:translateY(-3px);
+  box-shadow:0 8px 28px rgba(0,0,0,0.5), 0 0 24px rgba(79,195,195,0.20);
+}
+
+/* ── MAIN SITE TOAST ── */
+.main-toast {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(16px);
+  display:flex; align-items:center; gap:10px;
+  padding:12px 22px; border-radius:999px;
+  background:rgba(10,14,28,0.92); border:1px solid rgba(79,195,195,0.35);
+  backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+  font-size:0.88rem; color:var(--text-bright);
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  opacity:0; visibility:hidden; z-index:2000;
+  white-space:nowrap;
+  transition:all 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.main-toast.show {
+  opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);
 }

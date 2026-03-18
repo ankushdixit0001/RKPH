@@ -84,35 +84,124 @@ const ATT_MAP = (() => {
   return m;
 })();
 
-/* ─── Timetable data ─── */
-const TT = {
-  periods:['7:30–8:15','8:15–9:00','9:00–9:45','BREAK','10:00–10:45','10:45–11:30','11:30–12:15','LUNCH','1:00–1:45','1:45–2:30'],
-  days:{
-    Monday:   ['Physics','Chemistry','Mathematics',null,'Biology','English','Physics Lab',null,'Hindi','Free Period'],
-    Tuesday:  ['Mathematics','Physics','Chemistry',null,'English','Hindi','Biology Lab',null,'Mathematics','Chemistry'],
-    Wednesday:['Biology','Mathematics','English',null,'Physics','Chemistry','Hindi',null,'Computer Lab','Sports'],
-    Thursday: ['Chemistry','Biology','Hindi',null,'Mathematics','Physics','English',null,'Biology','Mathematics'],
-    Friday:   ['English','Hindi','Physics',null,'Chemistry','Mathematics','Biology',null,'Sports','Free Period'],
-    Saturday: ['Mathematics','Chemistry','Physics',null,'Hindi','English','Biology',null,null,null],
+/* ─── Timetable data — per class ─── */
+const PERIODS = ['7:30–8:15','8:15–9:00','9:00–9:45','BREAK','10:00–10:45','10:45–11:30','11:30–12:15','LUNCH','1:00–1:45','1:45–2:30'];
+
+const TT_DATA = {
+  /* ── Class 11 – Science ── */
+  11: {
+    label: 'Class 11 – Science',
+    periods: PERIODS,
+    days: {
+      Monday:   ['Physics','Chemistry','Mathematics',null,'Biology','English','Physics Lab',null,'Hindi','Free Period'],
+      Tuesday:  ['Mathematics','Physics','Chemistry',null,'English','Hindi','Biology Lab',null,'Mathematics','Chemistry'],
+      Wednesday:['Biology','Mathematics','English',null,'Physics','Chemistry','Hindi',null,'Computer Lab','Sports'],
+      Thursday: ['Chemistry','Biology','Hindi',null,'Mathematics','Physics','English',null,'Biology','Mathematics'],
+      Friday:   ['English','Hindi','Physics',null,'Chemistry','Mathematics','Biology',null,'Sports','Free Period'],
+      Saturday: ['Mathematics','Chemistry','Physics',null,'Hindi','English','Biology',null,null,null],
+    },
+    teachers: {
+      'Physics':'Mr. R. Singh','Chemistry':'Mrs. P. Gupta','Mathematics':'Mr. A. Kumar',
+      'Biology':'Mrs. S. Verma','English':'Mr. D. Sharma','Hindi':'Mrs. K. Mishra'
+    },
+    exam: [
+      {date:'10 Mar 2025',day:'Monday',   sub:'Physics',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'12 Mar 2025',day:'Wednesday',sub:'Chemistry',   time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'14 Mar 2025',day:'Friday',   sub:'Mathematics', time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'17 Mar 2025',day:'Monday',   sub:'Biology',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'19 Mar 2025',day:'Wednesday',sub:'English',     time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'21 Mar 2025',day:'Friday',   sub:'Hindi',       time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+    ]
   },
-  teachers:{'Physics':'Mr. R. Singh','Chemistry':'Mrs. P. Gupta','Mathematics':'Mr. A. Kumar',
-    'Biology':'Mrs. S. Verma','English':'Mr. D. Sharma','Hindi':'Mrs. K. Mishra'},
-  exam:[
-    {date:'10 Mar 2025',day:'Monday',   sub:'Physics',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
-    {date:'12 Mar 2025',day:'Wednesday',sub:'Chemistry',   time:'9:00 AM – 12:00 PM',venue:'Hall A'},
-    {date:'14 Mar 2025',day:'Friday',   sub:'Mathematics', time:'9:00 AM – 12:00 PM',venue:'Hall B'},
-    {date:'17 Mar 2025',day:'Monday',   sub:'Biology',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
-    {date:'19 Mar 2025',day:'Wednesday',sub:'English',     time:'9:00 AM – 12:00 PM',venue:'Hall B'},
-    {date:'21 Mar 2025',day:'Friday',   sub:'Hindi',       time:'9:00 AM – 12:00 PM',venue:'Hall A'},
-  ]
+
+  /* ── Class 12 – Science ── */
+  12: {
+    label: 'Class 12 – Science',
+    periods: PERIODS,
+    days: {
+      Monday:   ['Chemistry','Physics','Biology',null,'Mathematics','English','Chemistry Lab',null,'Hindi','Free Period'],
+      Tuesday:  ['Physics','Mathematics','Chemistry',null,'Hindi','Biology','Physics Lab',null,'English','Mathematics'],
+      Wednesday:['Mathematics','Chemistry','Hindi',null,'Biology','Physics','English',null,'Computer Lab','Sports'],
+      Thursday: ['Biology','English','Physics',null,'Chemistry','Mathematics','Hindi',null,'Biology Lab','Mathematics'],
+      Friday:   ['Hindi','Biology','Mathematics',null,'English','Chemistry','Physics',null,'Sports','Free Period'],
+      Saturday: ['Physics','English','Chemistry',null,'Mathematics','Hindi','Biology',null,null,null],
+    },
+    teachers: {
+      'Physics':'Mr. R. Singh','Chemistry':'Mrs. P. Gupta','Mathematics':'Mr. A. Kumar',
+      'Biology':'Mrs. S. Verma','English':'Mrs. T. Arora','Hindi':'Mrs. K. Mishra'
+    },
+    exam: [
+      {date:'11 Mar 2025',day:'Tuesday',  sub:'Physics',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'13 Mar 2025',day:'Thursday', sub:'Chemistry',   time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'15 Mar 2025',day:'Saturday', sub:'Mathematics', time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'18 Mar 2025',day:'Tuesday',  sub:'Biology',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'20 Mar 2025',day:'Thursday', sub:'English',     time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'22 Mar 2025',day:'Saturday', sub:'Hindi',       time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+    ]
+  },
+
+  /* ── Class 10 ── */
+  10: {
+    label: 'Class 10',
+    periods: PERIODS,
+    days: {
+      Monday:   ['Mathematics','Science','Social Sc.',null,'English','Hindi','Mathematics',null,'Sanskrit','Free Period'],
+      Tuesday:  ['Hindi','Mathematics','English',null,'Science','Social Sc.','Hindi',null,'Mathematics','Sanskrit'],
+      Wednesday:['Science','Hindi','Mathematics',null,'Sanskrit','English','Social Sc.',null,'Computer Lab','Sports'],
+      Thursday: ['English','Social Sc.','Hindi',null,'Mathematics','Science','Sanskrit',null,'Science','Mathematics'],
+      Friday:   ['Sanskrit','Mathematics','Social Sc.',null,'Hindi','Science','English',null,'Sports','Free Period'],
+      Saturday: ['Science','English','Hindi',null,'Mathematics','Sanskrit','Social Sc.',null,null,null],
+    },
+    teachers: {
+      'Mathematics':'Mr. A. Kumar','Science':'Mr. V. Yadav','Social Sc.':'Mrs. N. Singh',
+      'English':'Mr. D. Sharma','Hindi':'Mrs. K. Mishra','Sanskrit':'Mr. B. Tiwari'
+    },
+    exam: [
+      {date:'10 Mar 2025',day:'Monday',   sub:'Mathematics', time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'12 Mar 2025',day:'Wednesday',sub:'Science',     time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'14 Mar 2025',day:'Friday',   sub:'Social Sc.',  time:'9:00 AM – 12:00 PM',venue:'Hall C'},
+      {date:'17 Mar 2025',day:'Monday',   sub:'English',     time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'19 Mar 2025',day:'Wednesday',sub:'Hindi',       time:'9:00 AM – 12:00 PM',venue:'Hall A'},
+      {date:'21 Mar 2025',day:'Friday',   sub:'Sanskrit',    time:'9:00 AM – 12:00 PM',venue:'Hall C'},
+    ]
+  },
+
+  /* ── Class 9 ── */
+  9: {
+    label: 'Class 9',
+    periods: PERIODS,
+    days: {
+      Monday:   ['Hindi','Mathematics','Science',null,'English','Social Sc.','Hindi',null,'Sanskrit','Free Period'],
+      Tuesday:  ['Science','Hindi','Mathematics',null,'Social Sc.','Sanskrit','English',null,'Mathematics','Science'],
+      Wednesday:['English','Science','Social Sc.',null,'Mathematics','Hindi','Sanskrit',null,'Computer Lab','Sports'],
+      Thursday: ['Social Sc.','English','Hindi',null,'Sanskrit','Mathematics','Science',null,'English','Mathematics'],
+      Friday:   ['Mathematics','Sanskrit','English',null,'Hindi','Science','Social Sc.',null,'Sports','Free Period'],
+      Saturday: ['Sanskrit','Social Sc.','Mathematics',null,'Science','English','Hindi',null,null,null],
+    },
+    teachers: {
+      'Mathematics':'Mrs. R. Gupta','Science':'Mr. V. Yadav','Social Sc.':'Mrs. N. Singh',
+      'English':'Mr. D. Sharma','Hindi':'Mrs. K. Mishra','Sanskrit':'Mr. B. Tiwari'
+    },
+    exam: [
+      {date:'11 Mar 2025',day:'Tuesday',  sub:'Mathematics', time:'9:00 AM – 12:00 PM',venue:'Hall C'},
+      {date:'13 Mar 2025',day:'Thursday', sub:'Science',     time:'9:00 AM – 12:00 PM',venue:'Hall C'},
+      {date:'15 Mar 2025',day:'Saturday', sub:'Social Sc.',  time:'9:00 AM – 12:00 PM',venue:'Hall C'},
+      {date:'18 Mar 2025',day:'Tuesday',  sub:'English',     time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'20 Mar 2025',day:'Thursday', sub:'Hindi',       time:'9:00 AM – 12:00 PM',venue:'Hall B'},
+      {date:'22 Mar 2025',day:'Saturday', sub:'Sanskrit',    time:'9:00 AM – 12:00 PM',venue:'Hall C'},
+    ]
+  }
 };
 
 const SUB_COL={
   Physics:'rgba(79,195,195,.17)',Chemistry:'rgba(232,107,138,.17)',
   Mathematics:'rgba(245,200,66,.17)',Biology:'rgba(120,200,120,.17)',
   English:'rgba(180,150,255,.17)',Hindi:'rgba(255,180,100,.17)',
+  'Social Sc.':'rgba(255,160,80,.17)',Sanskrit:'rgba(220,180,255,.17)',
+  Science:'rgba(100,210,200,.17)',
   Sports:'rgba(255,255,255,.08)','Computer Lab':'rgba(100,180,255,.17)',
   'Physics Lab':'rgba(79,195,195,.12)','Biology Lab':'rgba(120,200,120,.12)',
+  'Chemistry Lab':'rgba(232,107,138,.12)',
   'Free Period':'rgba(255,255,255,.04)',
 };
 const sc=s=>s?(SUB_COL[s]||'rgba(255,255,255,.08)'):'rgba(255,255,255,.02)';
@@ -412,20 +501,21 @@ window.printMarksheet=function(){
 
 /* ─── Download timetable as HTML ─── */
 window.downloadTimetable=function(){
-  const cls=document.getElementById('ttClassSelect').value||'11';
-  const days=Object.keys(TT.days);
-  const periods=TT.periods;
+  const cls=parseInt(document.getElementById('ttClassSelect').value||'11');
+  const tt=TT_DATA[cls]||TT_DATA[11];
+  const days=Object.keys(tt.days);
+  const periods=tt.periods;
   let rows='';
   periods.forEach((p,i)=>{
     if(p==='BREAK'||p==='LUNCH'){
       rows+=`<tr><td colspan="${days.length+1}" style="text-align:center;background:#f0f0f0;color:#888;font-size:12px;padding:5px">${p}</td></tr>`;
     } else {
       rows+=`<tr><td style="font-size:12px;color:#666;white-space:nowrap">${p}</td>`;
-      days.forEach(d=>{const s=TT.days[d][i];rows+=`<td style="text-align:center;font-weight:${s?'600':'400'}">${s||'—'}</td>`;});
+      days.forEach(d=>{const s=tt.days[d][i];rows+=`<td style="text-align:center;font-weight:${s?'600':'400'}">${s||'—'}</td>`;});
       rows+='</tr>';
     }
   });
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Timetable – Class ${cls}</title>
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Timetable – ${tt.label}</title>
 <style>body{font-family:Arial,sans-serif;max-width:960px;margin:30px auto;color:#111}
 .hdr{text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:20px}
 .hdr h1{margin:0 0 4px;font-size:20px}.hdr p{margin:0;color:#555;font-size:14px}
@@ -435,7 +525,7 @@ td{padding:8px 10px;border:1px solid #ddd}
 tr:nth-child(even) td{background:#f8f8f8}
 .footer{margin-top:20px;text-align:center;font-size:12px;color:#999}</style></head>
 <body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1>
-<p>Weekly Timetable — Class ${cls} | Academic Year 2024–25</p></div>
+<p>Weekly Timetable — ${tt.label} | Academic Year 2024–25</p></div>
 <table><thead><tr><th>Period / Time</th>${days.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
 <tbody>${rows}</tbody></table>
 <div class="footer">Downloaded on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})} · RKPH Inter College</div>
@@ -898,17 +988,22 @@ window.switchTT=function(btn,tab){
 window.changeTTClass=function(v){
   curTTCls=parseInt(v);
   renderWeeklyTT(); renderExamTT(); renderTodaySlots();
+  // Update today card heading to reflect selected class
+  const tt=TT_DATA[curTTCls]||TT_DATA[11];
+  const hdr=document.querySelector('.tt-today-header h4');
+  if(hdr) hdr.innerHTML=`<i class="fas fa-sun"></i> Today's Schedule <small style="font-weight:400;opacity:.6;font-size:.78em">— ${tt.label}</small>`;
 };
 
 function renderWeeklyTT(){
-  const days=Object.keys(TT.days);
+  const tt=TT_DATA[curTTCls]||TT_DATA[11];
+  const days=Object.keys(tt.days);
   let html=`<thead><tr><th style="text-align:left;min-width:105px">Time</th>${days.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>`;
-  TT.periods.forEach((p,i)=>{
+  tt.periods.forEach((p,i)=>{
     if(p==='BREAK'||p==='LUNCH'){
       html+=`<tr><td colspan="${days.length+1}" class="tt-break-td">— ${p} —</td></tr>`;
     } else {
       html+=`<tr><td class="tt-period-td">${p}</td>`;
-      days.forEach(d=>{const s=TT.days[d][i];html+=`<td style="background:${sc(s)}">${s||'—'}</td>`;});
+      days.forEach(d=>{const s=tt.days[d][i];html+=`<td style="background:${sc(s)}">${s||'—'}</td>`;});
       html+=`</tr>`;
     }
   });
@@ -916,8 +1011,9 @@ function renderWeeklyTT(){
 }
 
 function renderExamTT(){
+  const tt=TT_DATA[curTTCls]||TT_DATA[11];
   let html=`<thead><tr><th>Date</th><th>Day</th><th>Subject</th><th>Time</th><th>Venue</th></tr></thead><tbody>`;
-  TT.exam.forEach(e=>{
+  tt.exam.forEach(e=>{
     html+=`<tr><td><strong>${e.date}</strong></td><td>${e.day}</td>
       <td style="background:${sc(e.sub)};font-weight:600">${e.sub}</td>
       <td>${e.time}</td><td>${e.venue}</td></tr>`;
@@ -926,15 +1022,16 @@ function renderExamTT(){
 }
 
 function renderTodaySlots(){
+  const tt=TT_DATA[curTTCls]||TT_DATA[11];
   const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const today=DAYS[new Date().getDay()];
-  const sched=TT.days[today]||TT.days['Monday'];
+  const sched=tt.days[today]||tt.days['Monday'];
   let html='';
   sched.forEach((sub,i)=>{
     if(!sub)return;
-    const p=TT.periods[i];
+    const p=tt.periods[i];
     if(!p||p==='BREAK'||p==='LUNCH')return;
-    const teacher=TT.teachers[sub]||'';
+    const teacher=tt.teachers[sub]||'';
     html+=`<div class="tt-slot" style="border-left:3px solid ${sub==='Free Period'?'rgba(255,255,255,.15)':'var(--teal)'}">
       <span class="tt-slot-time">${p}</span>
       <span class="tt-slot-sub" style="background:${sc(sub)}">${sub}</span>
