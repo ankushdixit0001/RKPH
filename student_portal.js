@@ -16382,20 +16382,8 @@ const FEES = {
   ]
 };
 
-/* ─── Calendar state ─── */
-let calYear=2025, calMonth=2;
-const ATT_MAP = (() => {
-  const m={}, absent=[5,12,19,26], late=[3,10,17,24], holiday=[2,9,16,23,30];
-  for(let d=1;d<=31;d++){
-    const k=`2025-2-${d}`;
-    if(holiday.includes(d))     m[k]='holiday';
-    else if(absent.includes(d)) m[k]='absent';
-    else if(late.includes(d))   m[k]='late';
-    else if(d<=17)              m[k]='present';
-  }
-  return m;
-})();
-
+/* ─── Calendar navigation state ─── */
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 
 /* ─── Timetable data — per class ─── */
 const PERIODS=['7:30–8:15','8:15–9:00','9:00–9:45','BREAK','10:00–10:45','10:45–11:30','11:30–12:15','LUNCH','1:00–1:45','1:45–2:30'];
@@ -16536,7 +16524,7 @@ window.doLogin=function(){
   document.getElementById('loginFormWrap').style.display='none';
   document.getElementById('loginDashboard').style.display='block';
   document.getElementById('dashName').textContent=st.name;
-  document.getElementById('dashMeta').textContent=`${st.class} – ${st.stream} · Roll: ${st.roll}`;
+  document.getElementById('dashMeta').textContent=`${st.class} – ${st.stream||'General'} · Roll: ${st.roll}`;
   // Header badge
   document.getElementById('spUserBadge').style.display='flex';
   document.getElementById('spUserName').textContent=st.shortName;
@@ -16548,6 +16536,14 @@ window.doLogin=function(){
   populateCertificates();
   renderFeeTable('all');
   updateFeeStats(st.roll);
+  renderCalendar();     // refresh calendar with this student's attendance data
+  // Auto-select timetable class matching student's class
+  const clsNum = st.class.replace(/\D/g,'') || '11';
+  const ttSel  = document.getElementById('ttClassSelect');
+  if(ttSel && TT_DATA[parseInt(clsNum)]){
+    ttSel.value = clsNum;
+    if(typeof changeTTClass==='function') changeTTClass(clsNum);
+  }
   showToast(`Welcome, ${st.name}!`,'success');
 };
 
@@ -16810,17 +16806,25 @@ tr:nth-child(even) td{background:#f5f5f5}
 window.downloadAttendance=function(){
   if(!AUTH.loggedIn){showToast('Please log in first','error');return}
   const st=AUTH.student;
-  const attData=ATTENDANCE[st.roll];
-  if(!attData){showToast('No attendance data available','info');return}
-  const SUBJ=attData.subjects||[];
-  const rows=SUBJ.map(s=>{
-    const p=Math.round(s.present/s.total*100);
-    const col=p>=75?'#1a9e6b':p>=60?'#e67e22':'#c0392b';
-    return `<tr><td>${s.n}</td><td style="text-align:center">${s.present}</td>
-      <td style="text-align:center">${s.total-s.present}</td>
-      <td style="text-align:center">${s.total}</td>
-      <td style="text-align:center;font-weight:700;color:${col}">${p}%</td>
-      <td style="text-align:center;color:${p>=75?'#1a9e6b':'#c0392b'};font-weight:600">${p>=75?'✓ OK':'⚠ Low'}</td></tr>`;
+  const {present, absent, late, total, overall} = getAttSummary(st.roll);
+  if(total===0){showToast('No attendance data available','info');return}
+  // Build month-by-month table from ATTENDANCE calendar
+  const rollData = ATTENDANCE[st.roll]||{};
+  const monthRows = Object.entries(rollData).map(([mk, mdata])=>{
+    const [yr,mo] = mk.split('-');
+    const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthName = MN[parseInt(mo)]||mk;
+    const mp=Object.values(mdata).filter(v=>v==='present').length;
+    const ma=Object.values(mdata).filter(v=>v==='absent').length;
+    const ml=Object.values(mdata).filter(v=>v==='late').length;
+    const mt=mp+ma+ml;
+    const mpct=mt>0?Math.round((mp+ml*0.5)/mt*100):0;
+    const col=mpct>=75?'#1a9e6b':mpct>=50?'#e67e22':'#c0392b';
+    return `<tr><td>${monthName} ${yr}</td><td style="text-align:center">${mp}</td>
+      <td style="text-align:center;color:#c0392b">${ma}</td>
+      <td style="text-align:center;color:#e67e22">${ml}</td>
+      <td style="text-align:center">${mt}</td>
+      <td style="text-align:center;font-weight:700;color:${col}">${mpct}%</td></tr>`;
   }).join('');
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Attendance Report – ${st.name}</title>
 <style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#111}
@@ -16836,16 +16840,16 @@ td{padding:9px 12px;border-bottom:1px solid #eee}
 tr:nth-child(even) td{background:#f8f8f8}
 .footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head>
 <body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1>
-<p>Attendance Report — ${st.name} · Roll: ${st.roll} · ${st.class} ${st.stream} · 2024–25</p></div>
+<p>Attendance Report — ${st.name} · Roll: ${st.roll} · ${st.class} ${st.stream||''} · Academic Year ${st.session||'2024-25'}</p></div>
 <div class="summary-bar">
-  <div class="sb"><span>Overall</span><strong style="color:${attData.overall>=75?'#1a9e6b':'#c0392b'}">${attData.overall}%</strong></div>
-  <div class="sb"><span>Present</span><strong>${attData.present}</strong></div>
-  <div class="sb"><span>Absent</span><strong style="color:#c0392b">${attData.absent}</strong></div>
-  <div class="sb"><span>Working Days</span><strong>${attData.workingDays}</strong></div>
+  <div class="sb"><span>Overall</span><strong style="color:${overall>=75?'#1a9e6b':'#c0392b'}">${overall}%</strong></div>
+  <div class="sb"><span>Present</span><strong>${present}</strong></div>
+  <div class="sb"><span>Absent</span><strong style="color:#c0392b">${absent}</strong></div>
+  <div class="sb"><span>Late</span><strong style="color:#e67e22">${late}</strong></div>
 </div>
-<table><thead><tr><th>Subject</th><th style="text-align:center">Present</th><th style="text-align:center">Absent</th>
-  <th style="text-align:center">Total</th><th style="text-align:center">%</th><th style="text-align:center">Status</th></tr></thead>
-<tbody>${rows}</tbody></table>
+<table><thead><tr><th>Month</th><th style="text-align:center">Present</th><th style="text-align:center">Absent</th>
+  <th style="text-align:center">Late</th><th style="text-align:center">Total Days</th><th style="text-align:center">%</th></tr></thead>
+<tbody>${monthRows||'<tr><td colspan="6" style="text-align:center">No monthly data available</td></tr>'}</tbody></table>
 <div class="footer">Generated on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})} · RKPH Inter College Student Portal</div>
 </body></html>`;
   triggerDownload(`Attendance_${st.roll}.html`, html);
@@ -16956,17 +16960,66 @@ function triggerDownload(filename, html){
    FEES
 ═══════════════════════════════════ */
 function updateFeeStats(roll){
-  const studentFees=FEES[roll]||[];
-  const totalPaid   =studentFees.filter(f=>f.status==='paid')   .reduce((s,f)=>s+f.amt,0);
-  const totalPending=studentFees.filter(f=>f.status==='pending').reduce((s,f)=>s+f.amt,0);
-  const nextDue     =studentFees.find(f=>f.status==='pending'||f.status==='upcoming');
-  // Update stat cards if they exist
-  const elPaid   =document.querySelector('.fee-stat.teal h3');
-  const elPending=document.querySelector('.fee-stat.rose h3');
-  const elDue    =document.querySelector('.fee-stat.amber h3');
-  if(elPaid)    elPaid.textContent   ='₹'+totalPaid.toLocaleString('en-IN');
-  if(elPending) elPending.textContent='₹'+totalPending.toLocaleString('en-IN');
-  if(elDue)     elDue.textContent    =nextDue?nextDue.due:'—';
+  const studentFees = FEES[roll]||[];
+  const totalPaid   = studentFees.filter(f=>f.status==='paid')   .reduce((s,f)=>s+f.amt,0);
+  const totalPending= studentFees.filter(f=>f.status==='pending').reduce((s,f)=>s+f.amt,0);
+  const nextDue     = studentFees.find(f=>f.status==='pending'||f.status==='upcoming');
+  const pendingFees = studentFees.filter(f=>f.status==='pending');
+  const el=id=>document.getElementById(id);
+  const st=AUTH.student;
+
+  // Fee stat cards — named IDs
+  if(el('feeStatPaid'))    el('feeStatPaid').textContent    = '₹'+totalPaid.toLocaleString('en-IN');
+  if(el('feeStatPending')) el('feeStatPending').textContent = totalPending>0?'₹'+totalPending.toLocaleString('en-IN'):'₹0';
+  if(el('feeStatDue'))     el('feeStatDue').textContent     = nextDue?nextDue.due:'—';
+  if(el('feeStatSession')) el('feeStatSession').textContent = st?.session||'2024-25';
+  if(el('feeScheduleLabel')) el('feeScheduleLabel').textContent = (st?.session||'2024-25')+(st?.class?' · '+st.class:'');
+
+  // Pay card — dynamic pending list
+  const dueList=el('feeDueList');
+  if(dueList) dueList.innerHTML=pendingFees.length
+    ? pendingFees.map(f=>`<div class="fee-due-row"><span>${f.q} – ${f.type}</span><strong>₹${f.amt.toLocaleString('en-IN')}</strong></div>`).join('')
+    : '<div class="fee-due-row"><span style="opacity:.5">No pending dues</span><strong>₹0</strong></div>';
+  if(el('feeTotalDue')) el('feeTotalDue').textContent=totalPending>0?'₹'+totalPending.toLocaleString('en-IN'):'₹0';
+  const payBtn=el('payNowBtn');
+  if(payBtn) payBtn.innerHTML=totalPending>0
+    ? `<i class="fas fa-lock"></i> Pay ₹${totalPending.toLocaleString('en-IN')} Securely`
+    : '<i class="fas fa-check-circle"></i> No Dues Pending';
+
+  // Quick Stats
+  const qs=id=>document.getElementById(id);
+  const myResults=Object.values(RESULTS).filter(r=>r.roll===roll).sort((a,b)=>b.pct-a.pct);
+  if(myResults.length){
+    if(qs('qs-exam')){ qs('qs-exam').textContent=myResults[0].pct.toFixed(1)+'%'; qs('qs-exam').className='teal'; }
+    if(qs('qs-rank')) qs('qs-rank').textContent=myResults[0].rank||'—';
+  } else {
+    if(qs('qs-exam')){ qs('qs-exam').textContent='—'; }
+    if(qs('qs-rank')) qs('qs-rank').textContent='—';
+  }
+  const {overall,present,absent,late}=getAttSummary(roll);
+  if(qs('qs-att')){ qs('qs-att').textContent=overall+'%'; qs('qs-att').className=overall>=75?'teal':'rose'; }
+  if(qs('qs-fees')){ qs('qs-fees').textContent=totalPending>0?'₹'+totalPending.toLocaleString('en-IN'):'₹0'; qs('qs-fees').className=totalPending>0?'rose':'teal'; }
+  const pending=(ASSIGNS[roll]||[]).filter(a=>!a.done).length;
+  if(qs('qs-assign')){ qs('qs-assign').textContent=pending; qs('qs-assign').className=pending>0?'amber':'teal'; }
+
+  // Attendance stat cards
+  if(el('attOverallPct')){ el('attOverallPct').textContent=overall+'%'; }
+  if(el('attPresent'))    el('attPresent').textContent=present;
+  if(el('attAbsent'))     el('attAbsent').textContent=absent;
+  if(el('attLate'))       el('attLate').textContent=late;
+  const circle=document.querySelector('.att-donut circle:nth-child(2)');
+  if(circle){ const r=42,circ=2*Math.PI*r; circle.setAttribute('stroke-dashoffset',(circ*(1-overall/100)).toFixed(1)); }
+  const minNote=document.querySelector('.att-min-note');
+  if(minNote) minNote.style.color=overall<75?'var(--rose)':'var(--muted)';
+
+  // Notice badge
+  const badge=el('noticeBadge');
+  if(badge && st){
+    const allN=getStudentNotices(st);
+    const urgentCount=allN.filter(n=>n.u).length;
+    badge.style.display=urgentCount>0?'inline-flex':'none';
+    badge.textContent=urgentCount+' Urgent';
+  }
 }
 function renderFeeTable(filter){
   const tbody=document.getElementById('feeTableBody');
@@ -17055,62 +17108,98 @@ function renderCalendar(){
   const dim=new Date(calYear,calMonth+1,0).getDate();
   const now=new Date();
   const isNow=now.getFullYear()===calYear&&now.getMonth()===calMonth;
+  // Get per-student attendance for this month
+  const roll = AUTH.student?.roll||'';
+  const mk   = `${calYear}-${calMonth}`;
+  const monthData = (ATTENDANCE[roll]||{})[mk]||{};
   let html='';
   for(let i=0;i<fd;i++) html+='<div class="cal-cell empty"></div>';
   for(let d=1;d<=dim;d++){
-    const k=`${calYear}-${calMonth}-${d}`;
-    const st=ATT_MAP[k]||'';
+    const st=monthData[String(d)]||monthData[d]||'';
     html+=`<div class="cal-cell ${st?'cal-'+st:''} ${isNow&&d===now.getDate()?'cal-today':''}" title="${st||'No data'}">${d}</div>`;
   }
   document.getElementById('calBody').innerHTML=html;
 }
+/* ─── Compute attendance summary from calendar data ─── */
+function getAttSummary(roll){
+  const rollData = ATTENDANCE[roll]||{};
+  let present=0, absent=0, late=0, total=0;
+  Object.values(rollData).forEach(mdata=>{
+    if(typeof mdata!=='object') return;
+    Object.values(mdata).forEach(s=>{
+      total++;
+      if(s==='present') present++;
+      else if(s==='absent') absent++;
+      else if(s==='late') late++;
+    });
+  });
+  const overall = total>0 ? Math.round((present+late*0.5)/total*100) : 0;
+  return {present, absent, late, total, overall, workingDays:total};
+}
+
 function renderSubjBars(){
-  const roll    = AUTH.student?.roll||'';
-  const attData = ATTENDANCE[roll];
-  const SUBJ    = attData?.subjects||[];
-  const el      = document.getElementById('subjAttendList');
+  const roll = AUTH.student?.roll||'';
+  const {present, absent, late, total, overall} = getAttSummary(roll);
+  const el = document.getElementById('subjAttendList');
   if(!el) return;
-  if(!SUBJ.length){
-    el.innerHTML='<p style="opacity:.45;font-size:.85rem">No subject attendance data available.</p>';
+  const working = present+absent+late;
+
+  if(working===0){
+    el.innerHTML='<p style="opacity:.45;font-size:.85rem">No attendance records yet. Records appear once admin marks daily attendance.</p>';
   } else {
-    el.innerHTML=SUBJ.map(s=>{
-      const p=Math.round(s.present/s.total*100);
-      const c=p>=75?'var(--teal)':p>=60?'var(--amber)':'var(--rose)';
+    el.innerHTML = [['Present',present,'var(--teal)'],['Absent',absent,'var(--rose)'],['Late / Half-day',late,'var(--amber)']].map(([lbl,val,col])=>{
+      const p=working>0?Math.round(val/working*100):0;
       return `<div class="subj-row">
-        <div class="subj-name">${s.n}${p<75?'<span style="color:var(--rose);font-size:.67rem;margin-left:3px">⚠</span>':''}</div>
-        <div class="subj-bar-bg"><div class="subj-bar" style="width:${p}%;background:${c}"></div></div>
-        <div class="subj-pct" style="color:${c}">${p}%</div>
-        <div class="subj-days">${s.present}/${s.total}</div>
+        <div class="subj-name">${lbl}</div>
+        <div class="subj-bar-bg"><div class="subj-bar" style="width:${p}%;background:${col}"></div></div>
+        <div class="subj-pct" style="color:${col}">${p}%</div>
+        <div class="subj-days">${val}d</div>
       </div>`;
     }).join('');
   }
-  // Update overall stat cards & donut from real data
-  if(attData){
-    const donutLabel = document.querySelector('.att-donut-label strong');
-    if(donutLabel) donutLabel.textContent = attData.overall+'%';
-    const minis = document.querySelectorAll('.att-mini strong');
-    const vals  = [attData.present, attData.absent, attData.late, attData.workingDays];
-    minis.forEach((m,i)=>{ if(vals[i]!==undefined) m.textContent=vals[i]; });
-    const circle = document.querySelector('.att-donut circle:nth-child(2)');
-    if(circle){
-      const r=42, circ=2*Math.PI*r;
-      circle.setAttribute('stroke-dashoffset', (circ*(1-attData.overall/100)).toFixed(1));
-    }
-    const minNote = document.querySelector('.att-min-note');
-    if(minNote && attData.overall<75) minNote.style.color='var(--rose)';
-  }
+
+  // Update attendance section using named IDs (no fragile CSS selectors)
+  const ge = id=>document.getElementById(id);
+  if(ge('attOverallPct')) ge('attOverallPct').textContent = overall+'%';
+  if(ge('attPresent'))    ge('attPresent').textContent    = present;
+  if(ge('attAbsent'))     ge('attAbsent').textContent     = absent;
+  if(ge('attLate'))       ge('attLate').textContent       = late;
+  const circle = document.querySelector('.att-donut circle:nth-child(2)');
+  if(circle){ const r=42,circ=2*Math.PI*r; circle.setAttribute('stroke-dashoffset',(circ*(1-overall/100)).toFixed(1)); }
+  const minNote = document.querySelector('.att-min-note');
+  if(minNote) minNote.style.color = overall<75?'var(--rose)':'var(--muted)';
 }
 
 /* ═══════════════════════════════════
    PORTAL / PROFILE
 ═══════════════════════════════════ */
-const NOTICES=[
-  {t:'Annual Examination Schedule Released',d:'15 Mar 2025',tag:'Exam',    u:true},
-  {t:'Fee Submission Last Date: 15 April',  d:'10 Mar 2025',tag:'Finance', u:true},
-  {t:'Sports Day — 22 March 2025',          d:'08 Mar 2025',tag:'Event',   u:false},
-  {t:'Parent-Teacher Meeting: 28 March',    d:'05 Mar 2025',tag:'Meeting', u:false},
-  {t:'Holiday on 25th March — Holi',        d:'02 Mar 2025',tag:'Holiday', u:false},
-];
+/* NOTICES — 3 types: global (all), class (one class), private (one student)
+   Exported from admin panel as: { global:[...], class:{cls:[...]}, private:{roll:[...]} }
+   Portal merges all relevant notices for the logged-in student */
+const NOTICES={
+  global:[
+    {t:'Annual Examination Schedule Released',d:'15 Mar 2025',tag:'Exam',   u:true},
+    {t:'Fee Submission Last Date: 15 April',  d:'10 Mar 2025',tag:'Finance',u:true},
+    {t:'Sports Day — 22 March 2025',          d:'08 Mar 2025',tag:'Event',  u:false},
+    {t:'Parent-Teacher Meeting: 28 March',    d:'05 Mar 2025',tag:'Meeting',u:false},
+    {t:'Holiday on 25th March — Holi',        d:'02 Mar 2025',tag:'Holiday',u:false},
+  ],
+  class:{
+    'Class 11':[{t:'Class 11 Practical Examination — 5 Apr 2025',d:'20 Mar 2025',tag:'Exam',u:true}],
+    'Class 12':[{t:'Class 12 Board Exam Tips Session',d:'18 Mar 2025',tag:'Exam',u:true}],
+    'Class 10':[{t:'Class 10 Pre-Board Results Released',d:'17 Mar 2025',tag:'Exam',u:false}],
+    'Class 9':[{t:'Class 9 Science Exhibition Preparation',d:'12 Mar 2025',tag:'Event',u:false}],
+  },
+  private:{}  // filled per-student by admin — roll: [{t,d,tag,u}]
+};
+
+/* ─── Helper: get all notices relevant to logged-in student ─── */
+function getStudentNotices(st){
+  const global  = NOTICES.global||[];
+  const classSt = (NOTICES.class||{})[st.class]||[];
+  const priv    = (NOTICES.private||{})[st.roll]||[];
+  return [...priv.map(n=>({...n,_private:true})), ...classSt.map(n=>({...n,_class:true})), ...global];
+}
 /* ─── Per-student Assignments ─── */
 const ASSIGNS = {
   "RKPH2024001": [
@@ -22553,12 +22642,18 @@ function populatePortal(st){
   document.getElementById('ppcFather').textContent = 'Father: '+(st.father||'—');
   document.getElementById('ppcFPhone').textContent = st.fatherPhone||'—';
 
-  document.getElementById('noticeList').innerHTML=NOTICES.map(n=>`
-    <div class="notice-item ${n.u?'urgent':''}">
-      <div class="ni-dot" style="background:${n.u?'var(--rose)':'var(--teal)'}"></div>
-      <div class="ni-body"><strong>${n.t}</strong><span>${n.d}</span></div>
-      <span class="ni-tag">${n.tag}</span>
-    </div>`).join('');
+  const allNotices = getStudentNotices(st);
+  document.getElementById('noticeList').innerHTML = allNotices.length
+    ? allNotices.map(n=>`
+    <div class="notice-item ${n.u?'urgent':''}${n._private?' private-notice':''}">
+      <div class="ni-dot" style="background:${n._private?'var(--amber)':n.u?'var(--rose)':'var(--teal)'}"></div>
+      <div class="ni-body">
+        <strong>${n.t}</strong>
+        <span>${n.d||''}${n._private?' &nbsp;·&nbsp; <span style="color:var(--amber);font-size:.7rem">🔒 Private</span>':n._class?' &nbsp;·&nbsp; <span style="opacity:.55;font-size:.7rem">'+st.class+'</span>':''}</span>
+      </div>
+      <span class="ni-tag">${n.tag||''}</span>
+    </div>`).join('')
+    : '<p style="opacity:.45;font-size:.85rem;padding:.4rem 0">No notices at the moment.</p>';
 
   const myAssigns = ASSIGNS[st.roll]||[];
   document.getElementById('assignList').innerHTML = myAssigns.length

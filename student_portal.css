@@ -655,3 +655,9 @@ kbd{background:rgba(255,255,255,0.10);padding:2px 6px;border-radius:5px;font-siz
   .atl-session{ display:none; }
   .atl-body{ padding:8px 10px; }
 }
+
+/* Private notice styling */
+.notice-item.private-notice {
+  border-color: rgba(245,200,66,0.22);
+  background: rgba(245,200,66,0.04);
+}

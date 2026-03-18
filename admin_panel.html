@@ -349,7 +349,7 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
                 <tr><td>7</td><td>session</td><td>2024-25</td><td><span class="badge badge-teal">Optional</span></td></tr>
                 <tr><td>8</td><td>dob</td><td>15 August 2008</td><td><span class="badge badge-teal">Optional</span></td></tr>
                 <tr><td>9</td><td>phone</td><td>+91 98765 43210</td><td><span class="badge badge-teal">Optional</span></td></tr>
-                <tr><td>10</td><td>email</td><td>rahul@rkph.edu</td><td><span class="badge badge-teal">Optional</span></td></tr>
+                <tr><td>10</td><td>email</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="cbb9aaa3bea78bb9a0bba3e5aeafbe">[email&#160;protected]</a></td><td><span class="badge badge-teal">Optional</span></td></tr>
                 <tr><td>11</td><td>address</td><td>Nagal, Saharanpur</td><td><span class="badge badge-teal">Optional</span></td></tr>
                 <tr><td>12</td><td>father</td><td>Suresh Kumar</td><td><span class="badge badge-teal">Optional</span></td></tr>
                 <tr><td>13</td><td>fatherPhone</td><td>+91 99887 76655</td><td><span class="badge badge-teal">Optional</span></td></tr>
@@ -858,7 +858,7 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
 <!-- Toast -->
 <div id="adminToast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 'use strict';
 
 /* ══════════════════════════════════════
@@ -2873,12 +2873,7 @@ function toast(msg, type='success'){
   el.innerHTML=`<i class="fas fa-${icons[type]}" style="color:${colors[type]};flex-shrink:0"></i><span>${msg}</span>`;
   el.classList.add('show');
   _toastTimer=setTimeout(()=>el.classList.remove('show'),3500);
-}
-
-/* ══ Enter key on login ══ */
-document.addEventListener('keydown', e=>{
-  if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
-});
+}-e 
 </script>
 </body>
 </html>

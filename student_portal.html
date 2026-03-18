@@ -248,15 +248,15 @@
       <p>View fee schedule, payment history and pay pending dues</p>
     </div>
     <div class="fee-summary-row">
-      <div class="g-card fee-stat teal"><div class="fstat-icon"><i class="fas fa-check-circle"></i></div><div><p>Total Paid</p><h3>₹18,500</h3></div></div>
-      <div class="g-card fee-stat rose"><div class="fstat-icon"><i class="fas fa-exclamation-circle"></i></div><div><p>Pending Dues</p><h3>₹4,500</h3></div></div>
-      <div class="g-card fee-stat amber"><div class="fstat-icon"><i class="fas fa-calendar-alt"></i></div><div><p>Next Due Date</p><h3>15 Apr</h3></div></div>
-      <div class="g-card fee-stat white"><div class="fstat-icon"><i class="fas fa-receipt"></i></div><div><p>Session</p><h3>2024–25</h3></div></div>
+      <div class="g-card fee-stat teal"><div class="fstat-icon"><i class="fas fa-check-circle"></i></div><div><p>Total Paid</p><h3 id="feeStatPaid">—</h3></div></div>
+      <div class="g-card fee-stat rose"><div class="fstat-icon"><i class="fas fa-exclamation-circle"></i></div><div><p>Pending Dues</p><h3 id="feeStatPending">—</h3></div></div>
+      <div class="g-card fee-stat amber"><div class="fstat-icon"><i class="fas fa-calendar-alt"></i></div><div><p>Next Due Date</p><h3 id="feeStatDue">—</h3></div></div>
+      <div class="g-card fee-stat white"><div class="fstat-icon"><i class="fas fa-receipt"></i></div><div><p>Session</p><h3 id="feeStatSession">—</h3></div></div>
     </div>
     <div class="fees-bottom-row">
       <div class="g-card fee-table-card">
         <div class="fee-table-topbar">
-          <h4><i class="fas fa-list"></i> Fee Schedule — 2024-25 <em>Class 11 Science</em></h4>
+          <h4><i class="fas fa-list"></i> Fee Schedule — <span id="feeScheduleLabel">2024-25</span></h4>
           <div style="display:flex;gap:8px;align-items:center">
             <select class="sp-input compact" onchange="filterFees(this.value)">
               <option value="all">All Terms</option>
@@ -274,18 +274,17 @@
       </div>
       <div class="g-card fee-pay-card">
         <h4><i class="fas fa-credit-card"></i> Pay Pending Fees</h4>
-        <div class="fee-due-list">
-          <div class="fee-due-row"><span>Q3 Tuition Fee</span><strong>₹3,000</strong></div>
-          <div class="fee-due-row"><span>Q3 Development Fee</span><strong>₹1,500</strong></div>
+        <div class="fee-due-list" id="feeDueList">
+          <div class="fee-due-row"><span>Loading…</span><strong>—</strong></div>
         </div>
-        <div class="fee-total-row"><span>Total Due</span><strong>₹4,500</strong></div>
+        <div class="fee-total-row"><span>Total Due</span><strong id="feeTotalDue">—</strong></div>
         <div class="pay-method-tabs">
           <button class="pmt active" onclick="selectPay(this,'upi')"><i class="fas fa-mobile-alt"></i>UPI</button>
           <button class="pmt" onclick="selectPay(this,'card')"><i class="fas fa-credit-card"></i>Card</button>
           <button class="pmt" onclick="selectPay(this,'bank')"><i class="fas fa-university"></i>Bank</button>
         </div>
         <div id="payInputArea"><input type="text" class="sp-input" placeholder="Enter UPI ID (e.g. name@upi)" style="margin-bottom:0.5rem"></div>
-        <button class="sp-btn-primary full-w" onclick="showToast('Payment gateway integration required for live use.','info')"><i class="fas fa-lock"></i> Pay ₹4,500 Securely</button>
+        <button class="sp-btn-primary full-w" id="payNowBtn" onclick="showToast('Payment gateway integration required for live use.','info')"><i class="fas fa-lock"></i> Pay Securely</button>
         <p class="pay-ssl-note"><i class="fas fa-shield-alt"></i> 256-bit SSL encrypted</p>
       </div>
     </div>
@@ -308,16 +307,16 @@
           <svg viewBox="0 0 100 100" class="att-donut">
             <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
             <circle cx="50" cy="50" r="42" fill="none" stroke="var(--teal)" stroke-width="9"
-              stroke-dasharray="263.9" stroke-dashoffset="34.3" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+              stroke-dasharray="263.9" stroke-dashoffset="263.9" stroke-linecap="round" transform="rotate(-90 50 50)"/>
           </svg>
-          <div class="att-donut-label"><strong>87%</strong><span>Overall</span></div>
+          <div class="att-donut-label"><strong id="attOverallPct">—</strong><span>Overall</span></div>
         </div>
         <p class="att-min-note"><i class="fas fa-info-circle"></i> Min. 75% required</p>
       </div>
       <div class="att-mini-row">
-        <div class="g-card att-mini teal"><i class="fas fa-calendar-check"></i><div><span>Present</span><strong>156</strong></div></div>
-        <div class="g-card att-mini rose"><i class="fas fa-calendar-times"></i><div><span>Absent</span><strong>23</strong></div></div>
-        <div class="g-card att-mini amber"><i class="fas fa-calendar-minus"></i><div><span>Late</span><strong>8</strong></div></div>
+        <div class="g-card att-mini teal"><i class="fas fa-calendar-check"></i><div><span>Present</span><strong id="attPresent">—</strong></div></div>
+        <div class="g-card att-mini rose"><i class="fas fa-calendar-times"></i><div><span>Absent</span><strong id="attAbsent">—</strong></div></div>
+        <div class="g-card att-mini amber"><i class="fas fa-calendar-minus"></i><div><span>Late</span><strong id="attLate">—</strong></div></div>
         <div class="g-card att-mini white"><i class="fas fa-calendar"></i><div><span>Working Days</span><strong>187</strong></div></div>
       </div>
     </div>
@@ -379,11 +378,11 @@
         <div class="g-card portal-quick-stats">
           <h4><i class="fas fa-tachometer-alt"></i> Quick Stats</h4>
           <div class="pqs-list">
-            <div class="pqs-row"><span>Last Exam Score</span><strong class="teal">82.4%</strong></div>
-            <div class="pqs-row"><span>Attendance</span><strong class="teal">87%</strong></div>
-            <div class="pqs-row"><span>Pending Fees</span><strong class="rose">₹4,500</strong></div>
-            <div class="pqs-row"><span>Assignments Due</span><strong class="amber">3</strong></div>
-            <div class="pqs-row"><span>Class Rank</span><strong>7 / 56</strong></div>
+            <div class="pqs-row"><span>Last Exam Score</span><strong class="teal" id="qs-exam">—</strong></div>
+            <div class="pqs-row"><span>Attendance</span><strong class="teal" id="qs-att">—</strong></div>
+            <div class="pqs-row"><span>Pending Fees</span><strong class="rose" id="qs-fees">—</strong></div>
+            <div class="pqs-row"><span>Assignments Due</span><strong class="amber" id="qs-assign">—</strong></div>
+            <div class="pqs-row"><span>Class Rank</span><strong id="qs-rank">—</strong></div>
           </div>
         </div>
       </div>
@@ -391,7 +390,7 @@
         <div class="g-card portal-notices">
           <div class="panel-header">
             <h4><i class="fas fa-bullhorn"></i> Notice Board</h4>
-            <span class="notif-badge">3 New</span>
+            <span class="notif-badge" id="noticeBadge" style="display:none">New</span>
           </div>
           <div id="noticeList" class="notice-list"></div>
         </div>
