@@ -17021,6 +17021,17 @@ function updateFeeStats(roll){
     badge.textContent=urgentCount+' Urgent';
   }
 }
+/* ─── Generate deterministic receipt number from fee data ─── */
+function genReceiptNo(roll, q, type, amt){
+  // Deterministic — same fee entry always gets same receipt number
+  const raw = roll + q + type + amt;
+  let hash = 0;
+  for(let i=0;i<raw.length;i++) hash = ((hash<<5)-hash)+raw.charCodeAt(i), hash|=0;
+  const num = Math.abs(hash) % 900000 + 100000; // 6-digit number
+  const yr  = new Date().getFullYear();
+  return `RKPH-${yr}-${num}`;
+}
+
 function renderFeeTable(filter){
   const tbody=document.getElementById('feeTableBody');
   if(!tbody)return;
@@ -17028,56 +17039,147 @@ function renderFeeTable(filter){
   const studentFees=FEES[roll]||[];
   const rows=filter==='all'?studentFees:studentFees.filter(r=>r.status===filter);
   tbody.innerHTML=rows.map(r=>{
-    const st=r.status==='paid'
+    const receiptNo = r.status==='paid' ? genReceiptNo(roll,r.q,r.type,r.amt) : '—';
+    const st = r.status==='paid'
       ?`<span class="fee-status-paid"><i class="fas fa-check-circle"></i> Paid</span>`
       :r.status==='pending'
       ?`<span class="fee-status-pending"><i class="fas fa-exclamation-circle"></i> Pending</span>`
       :`<span class="fee-status-upcoming"><i class="fas fa-clock"></i> Upcoming</span>`;
-    const act=r.status==='paid'
+    const receiptCell = r.status==='paid'
+      ? `<span class="fee-receipt-no">${receiptNo}</span>`
+      : `<span style="opacity:.3;font-size:.75rem">—</span>`;
+    const act = r.status==='paid'
       ?`<button class="sp-btn-outline" style="padding:5px 11px;font-size:.74rem"
-          onclick="downloadReceiptFor('${r.q}','${r.type}',${r.amt},'${r.paid}')"><i class="fas fa-download"></i> Receipt</button>`
+          onclick="downloadReceiptFor('${r.q}','${r.type}',${r.amt},'${r.paid}','${receiptNo}')">
+          <i class="fas fa-receipt"></i> Receipt</button>`
       :r.status==='pending'
       ?`<button class="sp-btn-primary" style="padding:5px 13px;font-size:.74rem"
-          onclick="showToast('Payment gateway required for live use.','info')"><i class="fas fa-rupee-sign"></i> Pay</button>`
+          onclick="showToast('Payment gateway required for live use.','info')">
+          <i class="fas fa-rupee-sign"></i> Pay</button>`
       :`<span style="opacity:.3;font-size:.8rem">—</span>`;
     return `<tr class="row-${r.status}">
       <td>${r.q}</td><td>${r.type}</td><td>₹${r.amt.toLocaleString('en-IN')}</td>
-      <td>${r.due}</td><td>${r.paid}</td><td>${st}</td><td>${act}</td></tr>`;
+      <td>${r.due}</td><td>${r.paid}</td><td>${receiptCell}</td><td>${st}</td><td>${act}</td></tr>`;
   }).join('');
 }
 
-window.downloadReceiptFor=function(q,type,amt,paidOn){
+window.downloadReceiptFor=function(q,type,amt,paidOn,receiptNo){
   if(!AUTH.loggedIn){showToast('Please log in first','error');return}
   const st=AUTH.student;
-  const receiptNo='RKPH'+Date.now().toString().slice(-8);
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt – ${receiptNo}</title>
-<style>body{font-family:Arial,sans-serif;max-width:560px;margin:40px auto;color:#111}
-.hdr{text-align:center;border-bottom:2px solid #1a1a2e;padding-bottom:14px;margin-bottom:20px}
-.hdr h1{font-size:18px;margin:0 0 4px}.hdr p{margin:0;color:#555;font-size:12px}
-.rec-no{text-align:center;background:#f0f0f0;padding:8px;border-radius:6px;font-size:13px;margin-bottom:18px}
-.info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;font-size:13px}
-.info div strong{min-width:110px;display:inline-block}
-.amount-box{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;border-radius:10px;padding:18px;text-align:center;margin-bottom:18px}
-.amount-box span{display:block;font-size:12px;opacity:.7;margin-bottom:4px}
-.amount-box strong{font-size:28px;font-weight:700}
-.stamp{text-align:center;margin-top:24px;color:#1a9e6b;font-size:18px;font-weight:700;border:2px solid #1a9e6b;display:inline-block;padding:8px 24px;border-radius:6px;transform:rotate(-3deg);margin-left:38%}
-.footer{margin-top:24px;text-align:center;font-size:11px;color:#999}</style></head>
-<body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Bajaj Bagh, Nangal, Saharanpur, UP 247551 · +91 95571 45962</p></div>
-<div class="rec-no"><strong>Receipt No:</strong> ${receiptNo} &nbsp;|&nbsp; <strong>Date:</strong> ${paidOn}</div>
-<div class="info">
-  <div><strong>Student:</strong> ${st.name}</div>
-  <div><strong>Roll No:</strong> ${st.roll}</div>
-  <div><strong>Class:</strong> ${st.class} – ${st.stream}</div>
-  <div><strong>Session:</strong> 2024–25</div>
-  <div><strong>Quarter:</strong> ${q}</div>
-  <div><strong>Fee Type:</strong> ${type}</div>
+  const rNo = receiptNo || genReceiptNo(st.roll,q,type,amt);
+  const printDate = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt – ${rNo}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.receipt{background:#fff;max-width:520px;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12)}
+.rec-header{background:linear-gradient(135deg,#0f3460 0%,#1a1a2e 100%);color:#fff;padding:24px;text-align:center}
+.rec-header h1{font-size:16px;font-weight:700;letter-spacing:0.05em;margin-bottom:3px}
+.rec-header p{font-size:11px;opacity:.7;line-height:1.5}
+.rec-body{padding:20px 24px}
+.rec-no-box{background:#f0f7ff;border:1px dashed #b3d4f5;border-radius:8px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:12px}
+.rec-no-box strong{font-family:'Courier New',monospace;font-size:13px;color:#0f3460;letter-spacing:0.05em}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.info-item label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#888;display:block;margin-bottom:2px}
+.info-item span{font-size:13px;font-weight:600;color:#222}
+.amount-box{background:linear-gradient(135deg,#1a9e6b,#117a55);color:#fff;border-radius:10px;padding:20px;text-align:center;margin-bottom:18px}
+.amount-box .label{font-size:11px;opacity:.8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.amount-box .value{font-size:32px;font-weight:800;letter-spacing:.02em}
+.amount-box .words{font-size:11px;opacity:.75;margin-top:4px}
+.stamp-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+.stamp{border:2px solid #1a9e6b;color:#1a9e6b;padding:6px 18px;border-radius:6px;font-size:13px;font-weight:700;transform:rotate(-5deg);display:inline-block;letter-spacing:.05em}
+.signature{text-align:right;font-size:11px;color:#888}
+.signature .line{border-top:1px solid #ccc;width:120px;margin:8px 0 3px auto}
+.footer{background:#f8f8f8;border-top:1px solid #eee;padding:12px 24px;text-align:center;font-size:10px;color:#aaa}
+@media print{body{background:#fff;padding:0}.receipt{box-shadow:none;border-radius:0;max-width:100%}}
+</style></head>
+<body><div class="receipt">
+  <div class="rec-header">
+    <h1>RAM KRISHNA PARAMHANS INTER COLLEGE</h1>
+    <p>Bajaj Bagh, Nangal, Saharanpur, UP 247551<br>Phone: +91 95571 45962 · Affiliated to UP Board</p>
+  </div>
+  <div class="rec-body">
+    <div class="rec-no-box">
+      <span>Receipt No: <strong>${rNo}</strong></span>
+      <span>Date: ${paidOn||printDate}</span>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><label>Student Name</label><span>${st.name}</span></div>
+      <div class="info-item"><label>Roll Number</label><span>${st.roll}</span></div>
+      <div class="info-item"><label>Class</label><span>${st.class} ${st.stream?'– '+st.stream:''}</span></div>
+      <div class="info-item"><label>Section</label><span>${st.section||'A'}</span></div>
+      <div class="info-item"><label>Fee Quarter</label><span>${q}</span></div>
+      <div class="info-item"><label>Fee Type</label><span>${type}</span></div>
+      <div class="info-item"><label>Session</label><span>${st.session||'2024-25'}</span></div>
+      <div class="info-item"><label>Payment Date</label><span>${paidOn||'—'}</span></div>
+    </div>
+    <div class="amount-box">
+      <div class="label">Amount Received</div>
+      <div class="value">₹${Number(amt).toLocaleString('en-IN')}</div>
+      <div class="words">(Rupees ${numberToWords(amt)} Only)</div>
+    </div>
+    <div class="stamp-row">
+      <div class="stamp">✓ PAID</div>
+      <div class="signature">
+        <div class="line"></div>
+        <div>Authorised Signatory</div>
+        <div style="font-size:10px;margin-top:2px">RKPH Inter College</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    This is a computer-generated receipt and is valid without signature · Generated on ${printDate}
+  </div>
 </div>
-<div class="amount-box"><span>Amount Paid</span><strong>₹${amt.toLocaleString('en-IN')}</strong></div>
-<div style="text-align:center"><div class="stamp">✓ PAID</div></div>
-<div class="footer">This is a computer-generated receipt · RKPH Inter College</div>
+<script>
+function numberToWords(n){
+  const a=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+  const b=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+  n=parseInt(n)||0;
+  if(n===0)return'zero';
+  const t=n=>n<20?a[n]:b[Math.floor(n/10)]+(n%10?' '+a[n%10]:'');
+  const h=n=>n>99?(a[Math.floor(n/100)]+' hundred'+(n%100?' '+t(n%100):'')):(n?t(n):'');
+  if(n>=100000)return h(Math.floor(n/100000))+' lakh'+(n%100000?' '+h(Math.floor(n%100000/1000))+' thousand'+(n%1000?' '+h(n%1000):''):'');
+  if(n>=1000)return h(Math.floor(n/1000))+' thousand'+(n%1000?' '+h(n%1000):'');
+  return h(n);
+}
 </body></html>`;
-  triggerDownload(`Receipt_${receiptNo}.html`, html);
+  triggerDownload(`Receipt_${rNo}.html`, html);
   showToast('Receipt downloaded!','success');
+};
+
+/* ─── Download all receipts as one HTML file ─── */
+window.downloadAllReceipts=function(){
+  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=AUTH.student;
+  const paidFees=(FEES[st.roll]||[]).filter(f=>f.status==='paid');
+  if(!paidFees.length){showToast('No paid fee records found.','info');return}
+  const printDate=new Date().toLocaleDateString('en-IN',{dateStyle:'long'});
+  const rows=paidFees.map(f=>{
+    const rNo=genReceiptNo(st.roll,f.q,f.type,f.amt);
+    return `<tr><td>${rNo}</td><td>${f.q}</td><td>${f.type}</td><td style="text-align:right">₹${f.amt.toLocaleString('en-IN')}</td><td>${f.paid}</td><td style="color:#1a9e6b;font-weight:600">Paid</td></tr>`;
+  }).join('');
+  const total=paidFees.reduce((s,f)=>s+f.amt,0);
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fee Receipts – ${st.name}</title>
+<style>body{font-family:Arial,sans-serif;max-width:720px;margin:30px auto;color:#111}
+.hdr{text-align:center;border-bottom:2px solid #1a1a2e;padding-bottom:14px;margin-bottom:20px}
+.hdr h1{font-size:18px;margin:0 0 3px}.hdr p{margin:0;color:#555;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#1a1a2e;color:#fff;padding:9px 12px;text-align:left}
+td{padding:9px 12px;border-bottom:1px solid #eee}
+tr:nth-child(even) td{background:#f8f8f8}
+.total{text-align:right;font-size:15px;font-weight:700;margin-top:12px;color:#1a1a2e}
+.footer{margin-top:20px;text-align:center;font-size:11px;color:#aaa}</style></head>
+<body>
+<div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1>
+<p>Fee Receipt Summary · ${st.name} · Roll: ${st.roll} · ${st.class} · Session: ${st.session||'2024-25'}</p></div>
+<table><thead><tr><th>Receipt No.</th><th>Quarter</th><th>Fee Type</th><th style="text-align:right">Amount</th><th>Paid On</th><th>Status</th></tr></thead>
+<tbody>${rows}</tbody></table>
+<div class="total">Total Paid: ₹${total.toLocaleString('en-IN')}</div>
+<div class="footer">Generated on ${printDate} · RKPH Inter College Student Portal</div>
+</body></html>`;
+  triggerDownload(`All_Receipts_${st.roll}.html`, html);
+  showToast(`${paidFees.length} receipts downloaded!`,'success');
 };
 
 window.selectPay=function(btn,method){
@@ -17103,22 +17205,53 @@ window.changeMonth=function(d){
 };
 function renderCalendar(){
   const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   document.getElementById('calMonthTitle').textContent=`${MN[calMonth]} ${calYear}`;
-  const fd=new Date(calYear,calMonth,1).getDay();
-  const dim=new Date(calYear,calMonth+1,0).getDate();
-  const now=new Date();
-  const isNow=now.getFullYear()===calYear&&now.getMonth()===calMonth;
-  // Get per-student attendance for this month
-  const roll = AUTH.student?.roll||'';
-  const mk   = `${calYear}-${calMonth}`;
+  const fd  = new Date(calYear,calMonth,1).getDay();
+  const dim = new Date(calYear,calMonth+1,0).getDate();
+  const now = new Date();
+  const isNow = now.getFullYear()===calYear && now.getMonth()===calMonth;
+
+  const roll      = AUTH.student?.roll||'';
+  const mk        = `${calYear}-${calMonth}`;
   const monthData = (ATTENDANCE[roll]||{})[mk]||{};
+
+  // Count month stats
+  let mp=0,ma=0,ml=0,mh=0;
+  Object.values(monthData).forEach(s=>{
+    if(s==='present') mp++;
+    else if(s==='absent') ma++;
+    else if(s==='late') ml++;
+    else if(s==='holiday') mh++;
+  });
+  const mTotal = mp+ma+ml;
+  const mPct   = mTotal>0 ? Math.round((mp+ml*0.5)/mTotal*100) : 0;
+
+  // Build calendar cells
   let html='';
   for(let i=0;i<fd;i++) html+='<div class="cal-cell empty"></div>';
   for(let d=1;d<=dim;d++){
-    const st=monthData[String(d)]||monthData[d]||'';
-    html+=`<div class="cal-cell ${st?'cal-'+st:''} ${isNow&&d===now.getDate()?'cal-today':''}" title="${st||'No data'}">${d}</div>`;
+    const s      = monthData[String(d)]||monthData[d]||'';
+    const dayName= DAYS[new Date(calYear,calMonth,d).getDay()];
+    const isSun  = new Date(calYear,calMonth,d).getDay()===0;
+    const title  = s ? `${dayName}, ${d} ${MN[calMonth]} — ${s.charAt(0).toUpperCase()+s.slice(1)}` : (isSun ? `${dayName} — Sunday` : `${dayName}, ${d} — Not marked`);
+    const sunStyle = isSun&&!s ? 'opacity:.28;' : '';
+    html+=`<div class="cal-cell ${s?'cal-'+s:''} ${isNow&&d===now.getDate()?'cal-today':''}" title="${title}" style="${sunStyle}">${d}</div>`;
   }
   document.getElementById('calBody').innerHTML=html;
+
+  // Update month progress bar
+  const pctColor = mPct>=75?'var(--teal)':mPct>=50?'var(--amber)':'var(--rose)';
+  const el=id=>document.getElementById(id);
+  if(el('attMonthBarLabel')) el('attMonthBarLabel').textContent=`${MN[calMonth]} ${calYear}`;
+  if(el('attMonthBarPct')){ el('attMonthBarPct').textContent=mTotal>0?mPct+'%':'No data'; el('attMonthBarPct').style.color=pctColor; }
+  if(el('attMonthBarFill')){ el('attMonthBarFill').style.width=mTotal>0?(mp/dim*100)+'%':'0%'; el('attMonthBarFill').style.background=pctColor; }
+  if(el('attMonthBarAbsent')) el('attMonthBarAbsent').style.width=mTotal>0?(ma/dim*100)+'%':'0%';
+  if(el('attMonthPresent')) el('attMonthPresent').textContent=mp;
+  if(el('attMonthAbsent'))  el('attMonthAbsent').textContent=ma;
+  if(el('attMonthLate'))    el('attMonthLate').textContent=ml;
+  if(el('attMonthHolidays')&&mh>0) el('attMonthHolidays').textContent=mh+' holiday'+(mh>1?'s':'');
+  else if(el('attMonthHolidays')) el('attMonthHolidays').textContent='';
 }
 /* ─── Compute attendance summary from calendar data ─── */
 function getAttSummary(roll){
@@ -17140,15 +17273,19 @@ function getAttSummary(roll){
 function renderSubjBars(){
   const roll = AUTH.student?.roll||'';
   const {present, absent, late, total, overall} = getAttSummary(roll);
+  const working = present+absent+late;
   const el = document.getElementById('subjAttendList');
   if(!el) return;
-  const working = present+absent+late;
 
   if(working===0){
     el.innerHTML='<p style="opacity:.45;font-size:.85rem">No attendance records yet. Records appear once admin marks daily attendance.</p>';
   } else {
-    el.innerHTML = [['Present',present,'var(--teal)'],['Absent',absent,'var(--rose)'],['Late / Half-day',late,'var(--amber)']].map(([lbl,val,col])=>{
-      const p=working>0?Math.round(val/working*100):0;
+    el.innerHTML = [
+      ['Present', present, 'var(--teal)'],
+      ['Absent',  absent,  'var(--rose)'],
+      ['Late / Half-day', late, 'var(--amber)']
+    ].map(([lbl,val,col])=>{
+      const p = working>0 ? Math.round(val/working*100) : 0;
       return `<div class="subj-row">
         <div class="subj-name">${lbl}</div>
         <div class="subj-bar-bg"><div class="subj-bar" style="width:${p}%;background:${col}"></div></div>
@@ -17158,16 +17295,72 @@ function renderSubjBars(){
     }).join('');
   }
 
-  // Update attendance section using named IDs (no fragile CSS selectors)
+  // Update all stat elements
   const ge = id=>document.getElementById(id);
   if(ge('attOverallPct')) ge('attOverallPct').textContent = overall+'%';
   if(ge('attPresent'))    ge('attPresent').textContent    = present;
   if(ge('attAbsent'))     ge('attAbsent').textContent     = absent;
   if(ge('attLate'))       ge('attLate').textContent       = late;
+  if(ge('attWorkingDays')) ge('attWorkingDays').textContent = working;
+
+  // Donut circle
   const circle = document.querySelector('.att-donut circle:nth-child(2)');
-  if(circle){ const r=42,circ=2*Math.PI*r; circle.setAttribute('stroke-dashoffset',(circ*(1-overall/100)).toFixed(1)); }
-  const minNote = document.querySelector('.att-min-note');
+  if(circle){
+    const r=42, circ=2*Math.PI*r;
+    circle.setAttribute('stroke-dashoffset', (circ*(1-overall/100)).toFixed(1));
+    circle.setAttribute('stroke', overall>=75?'var(--teal)':overall>=50?'var(--amber)':'var(--rose)');
+  }
+
+  // Warning banner
+  const banner = ge('attWarningBanner');
+  const warnTxt= ge('attWarningText');
+  if(banner){
+    if(overall<75 && working>0){
+      banner.style.display='flex';
+      const needed = Math.max(0, Math.ceil((0.75*working - present - late*0.5) / 0.25));
+      if(warnTxt) warnTxt.textContent = `⚠ Your attendance is ${overall}% — below the required 75%. You need to attend at least ${needed} more days to meet the minimum requirement.`;
+    } else {
+      banner.style.display='none';
+    }
+  }
+
+  // att-min-note color
+  const minNote = ge('attMinNote') || document.querySelector('.att-min-note');
   if(minNote) minNote.style.color = overall<75?'var(--rose)':'var(--muted)';
+
+  // Month-wise history
+  renderMonthHistory(roll);
+}
+
+function renderMonthHistory(roll){
+  const el = document.getElementById('attMonthHistory');
+  if(!el) return;
+  const rollData = ATTENDANCE[roll]||{};
+  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const rows = Object.entries(rollData)
+    .sort(([a],[b])=>a.localeCompare(b))
+    .map(([mk, mdata])=>{
+      const [yr, moStr] = mk.split('-');
+      const mo = parseInt(moStr);
+      const mp = Object.values(mdata).filter(v=>v==='present').length;
+      const ma = Object.values(mdata).filter(v=>v==='absent').length;
+      const ml = Object.values(mdata).filter(v=>v==='late').length;
+      const mt = mp+ma+ml;
+      const pct = mt>0 ? Math.round((mp+ml*0.5)/mt*100) : 0;
+      const col = pct>=75?'var(--teal)':pct>=50?'var(--amber)':'var(--rose)';
+      return `<div class="att-mh-row">
+        <span class="att-mh-month">${MN[mo]||mo} ${yr}</span>
+        <div class="att-mh-bar-track">
+          <div class="att-mh-bar-fill" style="width:${pct}%;background:${col}"></div>
+        </div>
+        <span class="att-mh-pct" style="color:${col}">${mt>0?pct+'%':'—'}</span>
+      </div>`;
+    });
+
+  el.innerHTML = rows.length
+    ? rows.join('')
+    : '<p style="opacity:.4;font-size:.8rem">No monthly data yet.</p>';
 }
 
 /* ═══════════════════════════════════

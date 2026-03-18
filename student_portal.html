@@ -257,18 +257,19 @@
       <div class="g-card fee-table-card">
         <div class="fee-table-topbar">
           <h4><i class="fas fa-list"></i> Fee Schedule — <span id="feeScheduleLabel">2024-25</span></h4>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select class="sp-input compact" onchange="filterFees(this.value)">
               <option value="all">All Terms</option>
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
               <option value="upcoming">Upcoming</option>
             </select>
-            <button class="sp-btn-outline" style="padding:7px 14px;font-size:0.8rem" onclick="downloadFeeStatement()"><i class="fas fa-download"></i> Statement</button>
+            <button class="sp-btn-outline" style="padding:7px 14px;font-size:0.8rem" onclick="downloadFeeStatement()"><i class="fas fa-file-alt"></i> Statement</button>
+            <button class="sp-btn-outline" style="padding:7px 14px;font-size:0.8rem" onclick="downloadAllReceipts()"><i class="fas fa-download"></i> All Receipts</button>
           </div>
         </div>
         <div class="fee-table-scroll">
-          <table class="sp-table"><thead><tr><th>Quarter</th><th>Fee Type</th><th>Amount</th><th>Due Date</th><th>Paid On</th><th>Status</th><th>Action</th></tr></thead>
+          <table class="sp-table"><thead><tr><th>Quarter</th><th>Fee Type</th><th>Amount</th><th>Due Date</th><th>Paid On</th><th>Receipt No.</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="feeTableBody"></tbody></table>
         </div>
       </div>
@@ -299,8 +300,16 @@
     <div class="sp-section-head">
       <span class="sp-chip"><i class="fas fa-calendar-check"></i> Academic</span>
       <h2>Attendance</h2>
-      <p>Monthly calendar, subject-wise records and attendance summary</p>
+      <p>Monthly calendar, annual summary and attendance analytics</p>
     </div>
+
+    <!-- Low attendance warning (shown dynamically) -->
+    <div id="attWarningBanner" style="display:none" class="att-warning-banner">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span id="attWarningText">Your attendance is below 75%. Please contact your class teacher.</span>
+    </div>
+
+    <!-- Top stats row -->
     <div class="att-stats-row">
       <div class="g-card att-big-card">
         <div class="att-donut-wrap">
@@ -311,15 +320,35 @@
           </svg>
           <div class="att-donut-label"><strong id="attOverallPct">—</strong><span>Overall</span></div>
         </div>
-        <p class="att-min-note"><i class="fas fa-info-circle"></i> Min. 75% required</p>
+        <p class="att-min-note" id="attMinNote"><i class="fas fa-info-circle"></i> Min. 75% required</p>
       </div>
       <div class="att-mini-row">
         <div class="g-card att-mini teal"><i class="fas fa-calendar-check"></i><div><span>Present</span><strong id="attPresent">—</strong></div></div>
         <div class="g-card att-mini rose"><i class="fas fa-calendar-times"></i><div><span>Absent</span><strong id="attAbsent">—</strong></div></div>
         <div class="g-card att-mini amber"><i class="fas fa-calendar-minus"></i><div><span>Late</span><strong id="attLate">—</strong></div></div>
-        <div class="g-card att-mini white"><i class="fas fa-calendar"></i><div><span>Working Days</span><strong>187</strong></div></div>
+        <div class="g-card att-mini white"><i class="fas fa-calendar"></i><div><span>Working Days</span><strong id="attWorkingDays">—</strong></div></div>
       </div>
     </div>
+
+    <!-- Month progress bar -->
+    <div class="g-card att-month-bar-card">
+      <div class="att-month-bar-header">
+        <span id="attMonthBarLabel" style="font-size:0.82rem;font-weight:600;color:var(--text)">This Month</span>
+        <span id="attMonthBarPct" style="font-size:0.82rem;font-weight:700;color:var(--teal)">—</span>
+      </div>
+      <div class="att-month-bar-track">
+        <div class="att-month-bar-fill" id="attMonthBarFill" style="width:0%"></div>
+        <div class="att-month-bar-absent" id="attMonthBarAbsent" style="width:0%"></div>
+      </div>
+      <div class="att-month-bar-legend">
+        <span><i style="background:var(--teal)"></i> Present <strong id="attMonthPresent">—</strong></span>
+        <span><i style="background:var(--rose)"></i> Absent <strong id="attMonthAbsent">—</strong></span>
+        <span><i style="background:var(--amber)"></i> Late <strong id="attMonthLate">—</strong></span>
+        <span style="margin-left:auto;font-size:0.7rem;color:var(--muted)" id="attMonthHolidays"></span>
+      </div>
+    </div>
+
+    <!-- Calendar + subject attendance -->
     <div class="att-bottom-row">
       <div class="g-card att-cal-card">
         <div class="cal-header">
@@ -338,10 +367,18 @@
       </div>
       <div class="g-card att-subj-card">
         <div class="att-subj-header">
-          <h4><i class="fas fa-book-open"></i> Subject-wise Attendance</h4>
+          <h4><i class="fas fa-chart-bar"></i> Attendance Breakdown</h4>
           <button class="sp-btn-outline" style="padding:6px 14px;font-size:0.78rem" onclick="downloadAttendance()"><i class="fas fa-download"></i> Report</button>
         </div>
         <div id="subjAttendList"></div>
+
+        <!-- Monthly history -->
+        <div style="margin-top:1.4rem">
+          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.7rem">
+            <i class="fas fa-history" style="margin-right:5px"></i> Month-wise History
+          </div>
+          <div id="attMonthHistory" class="att-month-history"></div>
+        </div>
       </div>
     </div>
   </div>
