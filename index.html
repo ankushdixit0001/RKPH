@@ -440,10 +440,30 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Ram Krishna Paramhans Inter College. All rights reserved. &mdash; Nagal, Saharanpur</p>
+                <p><span id="adminGate" title="">&copy;</span> 2026 Ram Krishna Paramhans Inter College. All rights reserved. &mdash; Nagal, Saharanpur</p>
             </div>
         </div>
     </footer>
+
+    <!-- Hidden Admin Access — triple-click © in footer -->
+    <div id="adminAccessOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+      <div style="background:#0f0f1a;border:1px solid rgba(79,195,195,0.25);border-radius:16px;padding:2rem 2.4rem;width:320px;box-shadow:0 0 60px rgba(0,0,0,0.6)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.4rem">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(79,195,195,0.12);border:1px solid rgba(79,195,195,0.25);display:flex;align-items:center;justify-content:center;color:#4dc3c3"><i class="fas fa-shield-alt"></i></div>
+          <div><div style="font-size:0.92rem;font-weight:700;color:#e8e8f0">Admin Access</div><div style="font-size:0.72rem;color:#666">RKPH Management Panel</div></div>
+        </div>
+        <input id="adminPassInput" type="password" placeholder="Enter admin passphrase" autocomplete="off"
+          style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#e8e8f0;font-size:0.87rem;outline:none;box-sizing:border-box;margin-bottom:10px"
+          onkeydown="if(event.key==='Enter')verifyAdminAccess()">
+        <p id="adminPassErr" style="color:#e5567a;font-size:0.75rem;margin:0 0 10px;display:none">Incorrect passphrase.</p>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('adminAccessOverlay').style.display='none';document.getElementById('adminPassInput').value='';document.getElementById('adminPassErr').style.display='none';"
+            style="flex:1;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#888;cursor:pointer;font-size:0.83rem">Cancel</button>
+          <button onclick="verifyAdminAccess()"
+            style="flex:2;padding:9px;border-radius:8px;border:none;background:rgba(79,195,195,0.18);color:#4dc3c3;cursor:pointer;font-size:0.83rem;font-weight:600">Enter Panel</button>
+        </div>
+      </div>
+    </div>
 
 
 
@@ -1228,6 +1248,43 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
+
+    /* ── Hidden Admin Gate ── */
+    (function(){
+      let _clicks = 0, _timer = null;
+      const gate = document.getElementById('adminGate');
+      if(!gate) return;
+
+      gate.addEventListener('click', function(){
+        _clicks++;
+        clearTimeout(_timer);
+        _timer = setTimeout(()=>{ _clicks=0; }, 600);
+        if(_clicks >= 3){
+          _clicks = 0;
+          clearTimeout(_timer);
+          const overlay = document.getElementById('adminAccessOverlay');
+          overlay.style.display = 'flex';
+          setTimeout(()=>document.getElementById('adminPassInput').focus(), 100);
+        }
+      });
+    })();
+
+    function verifyAdminAccess(){
+      const val = document.getElementById('adminPassInput').value;
+      const err = document.getElementById('adminPassErr');
+      // Same passphrase as admin panel login
+      if(val === 'rkph@admin2025'){
+        document.getElementById('adminAccessOverlay').style.display = 'none';
+        document.getElementById('adminPassInput').value = '';
+        err.style.display = 'none';
+        window.open('admin_panel.html','_blank');
+      } else {
+        err.style.display = 'block';
+        document.getElementById('adminPassInput').value = '';
+        document.getElementById('adminPassInput').focus();
+        setTimeout(()=>{ err.style.display='none'; }, 3000);
+      }
     }
     </script>
 </body>

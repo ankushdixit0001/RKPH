@@ -552,3 +552,106 @@ kbd{background:rgba(255,255,255,0.10);padding:2px 6px;border-radius:5px;font-siz
   .tt-tab{padding:6px 10px;font-size:0.73rem}
   .tt-tab i{display:none}
 }
+/* ══════════════════════════════════════
+   ACADEMIC HISTORY TIMELINE
+══════════════════════════════════════ */
+.portal-history-card { margin-top: 1.2rem; }
+
+.academic-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.8rem;
+}
+
+.atl-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.atl-item.atl-current .atl-body {
+  background: rgba(245,200,66,0.06);
+  border-color: rgba(245,200,66,0.22);
+}
+
+.atl-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 24px;
+}
+
+.atl-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.atl-line {
+  width: 2px;
+  flex: 1;
+  min-height: 18px;
+  background: rgba(255,255,255,0.1);
+  margin: 2px 0;
+}
+
+.atl-body {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+}
+
+.atl-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.atl-cls {
+  font-size: 0.87rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.atl-session {
+  font-size: 0.73rem;
+  color: var(--muted);
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  padding: 1px 7px;
+}
+
+.atl-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.atl-sub {
+  font-size: 0.77rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.atl-grade {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+@media(max-width:480px){
+  .atl-session{ display:none; }
+  .atl-body{ padding:8px 10px; }
+}

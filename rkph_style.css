@@ -909,3 +909,10 @@ section { padding:100px 0; }
 .main-toast.show {
   opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);
 }
+/* Admin gate — make © completely invisible/normal */
+#adminGate {
+  cursor: default;
+  user-select: none;
+  color: inherit;
+  text-decoration: none;
+}

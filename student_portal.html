@@ -133,6 +133,17 @@
         <label>Class</label>
         <select id="resClass" class="sp-input">
           <option value="">All Classes</option>
+          <option value="NA">N.A (Nursery)</option>
+          <option value="LKG">LKG</option>
+          <option value="UKG">UKG</option>
+          <option value="1">Class 1</option>
+          <option value="2">Class 2</option>
+          <option value="3">Class 3</option>
+          <option value="4">Class 4</option>
+          <option value="5">Class 5</option>
+          <option value="6">Class 6</option>
+          <option value="7">Class 7</option>
+          <option value="8">Class 8</option>
           <option value="9">Class 9</option>
           <option value="10">Class 10</option>
           <option value="11">Class 11</option>
@@ -194,10 +205,18 @@
       </div>
       <div class="tt-topbar-right">
         <select class="sp-input compact" id="ttClassSelect" onchange="changeTTClass(this.value)">
-          <option value="11">Class 11 – Science</option>
-          <option value="12">Class 12 – Science</option>
-          <option value="10">Class 10</option>
+          <option value="1">Class 1</option>
+          <option value="2">Class 2</option>
+          <option value="3">Class 3</option>
+          <option value="4">Class 4</option>
+          <option value="5">Class 5</option>
+          <option value="6">Class 6</option>
+          <option value="7">Class 7</option>
+          <option value="8">Class 8</option>
           <option value="9">Class 9</option>
+          <option value="10">Class 10</option>
+          <option value="11" selected>Class 11</option>
+          <option value="12">Class 12</option>
         </select>
         <button class="sp-btn-outline" onclick="downloadTimetable()"><i class="fas fa-download"></i> Download</button>
       </div>
@@ -387,6 +406,14 @@
           <div class="g-card res-tile" onclick="downloadStudyMaterial()"><div class="rt-icon teal"><i class="fas fa-file-pdf"></i></div><div><strong>Study Material</strong><p>Chapter PDFs &amp; Notes</p></div><i class="fas fa-download rt-arrow"></i></div>
           <div class="g-card res-tile" onclick="showToast('Video lectures portal opening soon','info')"><div class="rt-icon amber"><i class="fas fa-play-circle"></i></div><div><strong>Video Lectures</strong><p>12 New Videos</p></div><i class="fas fa-arrow-right rt-arrow"></i></div>
           <div class="g-card res-tile" onclick="downloadPreviousPapers()"><div class="rt-icon rose"><i class="fas fa-file-alt"></i></div><div><strong>Previous Papers</strong><p>2020 – 2024</p></div><i class="fas fa-download rt-arrow"></i></div>
+        </div>
+        <!-- Academic History Timeline -->
+        <div class="g-card portal-history-card" id="portalHistoryCard" style="display:none">
+          <div class="panel-header">
+            <h4><i class="fas fa-history"></i> Academic Journey</h4>
+            <span class="sp-chip" style="font-size:0.72rem" id="historyYearsChip"></span>
+          </div>
+          <div id="academicTimeline" class="academic-timeline"></div>
         </div>
       </div>
     </div>
