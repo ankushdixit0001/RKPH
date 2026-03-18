@@ -7,6 +7,15 @@
     <link rel="stylesheet" href="rkph_style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>
+      // ── REPLACE these 3 values with your own from EmailJS dashboard ──
+      const EMAILJS_PUBLIC_KEY  = '4GdnuNyjGWlg2tbhx';
+      const EMAILJS_SERVICE_ID  = 'service_xa1lt0t';
+      const EMAILJS_TEMPLATE_ID = 'template_npjscfu';
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    </script>
 </head>
 <body>
     <!-- Header -->
@@ -365,20 +374,27 @@
                 </div>
                 <div class="contact-form">
                     <h3>Send us a Message</h3>
-                    <form id="contactForm" onsubmit="handleContactSubmit(event)">
+                    <form id="contactForm" onsubmit="handleContactSubmit(event)" novalidate>
                         <div class="form-group">
-                            <input type="text" placeholder="Your Name" required>
+                            <input type="text" name="from_name" id="cf_name" placeholder="Your Name" required>
+                            <span class="cf-error" id="err_name"></span>
                         </div>
                         <div class="form-group">
-                            <input type="email" placeholder="Your Email" required>
+                            <input type="email" name="from_email" id="cf_email" placeholder="Your Email" required>
+                            <span class="cf-error" id="err_email"></span>
                         </div>
                         <div class="form-group">
-                            <input type="text" placeholder="Subject" required>
+                            <input type="text" name="subject" id="cf_subject" placeholder="Subject" required>
+                            <span class="cf-error" id="err_subject"></span>
                         </div>
                         <div class="form-group">
-                            <textarea placeholder="Your Message" rows="5" required></textarea>
+                            <textarea name="message" id="cf_message" placeholder="Your Message" rows="5" required></textarea>
+                            <span class="cf-error" id="err_message"></span>
                         </div>
-                        <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Send Message</button>
+                        <button type="submit" class="btn-primary" id="cfSubmitBtn">
+                            <i class="fas fa-paper-plane" id="cfBtnIcon"></i>
+                            <span id="cfBtnText">Send Message</span>
+                        </button>
                     </form>
                 </div>
             </div>
@@ -533,11 +549,74 @@
         }, { passive: true });
     });
 
-    // Contact form submit
+    // ── Contact Form — EmailJS ──
     function handleContactSubmit(e) {
         e.preventDefault();
-        showMainToast('Message sent! We\'ll get back to you soon.', 'success');
-        e.target.reset();
+
+        // Clear previous errors
+        ['name','email','subject','message'].forEach(f => {
+            document.getElementById('err_'+f).textContent = '';
+        });
+
+        // Validate
+        const name    = document.getElementById('cf_name').value.trim();
+        const email   = document.getElementById('cf_email').value.trim();
+        const subject = document.getElementById('cf_subject').value.trim();
+        const message = document.getElementById('cf_message').value.trim();
+        let valid = true;
+
+        if (!name) {
+            document.getElementById('err_name').textContent = 'Please enter your name.';
+            valid = false;
+        }
+        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) {
+            document.getElementById('err_email').textContent = 'Please enter your email.';
+            valid = false;
+        } else if (!emailRe.test(email)) {
+            document.getElementById('err_email').textContent = 'Please enter a valid email address.';
+            valid = false;
+        }
+        if (!subject) {
+            document.getElementById('err_subject').textContent = 'Please enter a subject.';
+            valid = false;
+        }
+        if (!message) {
+            document.getElementById('err_message').textContent = 'Please write your message.';
+            valid = false;
+        }
+        if (!valid) return;
+
+        // Loading state
+        const btn     = document.getElementById('cfSubmitBtn');
+        const btnIcon = document.getElementById('cfBtnIcon');
+        const btnText = document.getElementById('cfBtnText');
+        btn.disabled = true;
+        btnIcon.className = 'fas fa-spinner fa-spin';
+        btnText.textContent = 'Sending…';
+
+        // Send via EmailJS
+        emailjs.sendForm(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, '#contactForm')
+            .then(() => {
+                // Success
+                btnIcon.className = 'fas fa-check';
+                btnText.textContent = 'Sent!';
+                showMainToast('Message sent! We\'ll get back to you soon.', 'success');
+                document.getElementById('contactForm').reset();
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btnIcon.className = 'fas fa-paper-plane';
+                    btnText.textContent = 'Send Message';
+                }, 3000);
+            })
+            .catch((err) => {
+                // Error
+                btn.disabled = false;
+                btnIcon.className = 'fas fa-paper-plane';
+                btnText.textContent = 'Send Message';
+                showMainToast('Failed to send. Please try calling us directly.', 'error');
+                console.error('EmailJS error:', err);
+            });
     }
 
     // Toast system for main site
