@@ -586,7 +586,9 @@ section { padding:100px 0; }
 .social-links a:hover { background:rgba(255,255,255,0.12); color:var(--text-bright); transform:translateY(-2px); }
 .footer-bottom { text-align:center; padding-top:2rem; border-top:1px solid rgba(255,255,255,0.07); font-size:0.82rem; color:rgba(200,215,255,0.40); }
 
-/* ── MOBILE ── */
+/* ══════════════════════════════════════
+   RESPONSIVE — 960px (tablet / small laptop)
+══════════════════════════════════════ */
 @media (max-width: 960px) {
   .nav-menu {
     position:fixed; top:0; right:-100%; width:min(320px,85vw); height:100vh;
@@ -598,7 +600,10 @@ section { padding:100px 0; }
   }
   .nav-menu.active { right:0; }
   .nav-menu ul { flex-direction:column; gap:4px; width:100%; align-items:stretch; }
-  .nav-menu > ul > li > a { border-radius:var(--radius-sm); justify-content:flex-start; min-width:unset; padding:10px 16px; font-size:0.92rem; }
+  .nav-menu > ul > li > a {
+    border-radius:var(--radius-sm); justify-content:flex-start;
+    min-width:unset; padding:10px 16px; font-size:0.92rem;
+  }
   .nav-menu li { width:100%; }
   .dropdown-menu {
     position:static; transform:none; left:auto;
@@ -612,21 +617,145 @@ section { padding:100px 0; }
   .dropdown:hover .dropdown-menu { opacity:1; visibility:visible; transform:none; }
   .dropdown-menu a { padding:10px 16px; font-size:0.85rem; border-radius:0; }
   .menu-toggle { display:flex; z-index:1001; }
-  .about-grid,.academics-grid,.contact-content { grid-template-columns:1fr; }
+  .about-grid, .academics-grid, .contact-content { grid-template-columns:1fr; }
   .gallery-grid { grid-template-columns:1fr 1fr; }
   .footer-content { grid-template-columns:1fr 1fr; }
 }
 
+/* ══════════════════════════════════════
+   RESPONSIVE — 640px (large phones / small tablet)
+══════════════════════════════════════ */
 @media (max-width: 640px) {
-  .hero h2 { font-size:2.2rem; }
+  section { padding:72px 0; }
+  .container { padding:0 18px; }
+
+  .hero { padding:130px 18px 64px; }
+  .hero h2 { font-size:2.1rem; }
+  .hero p { font-size:1rem; }
+  .hero-stats { gap:12px; margin-top:3.5rem; }
   .hero-buttons { flex-direction:column; align-items:center; }
-  .hero-stats { gap:12px; }
-  .stat-card { padding:1.4rem 1.8rem; }
-  .gallery-grid { grid-template-columns:1fr; }
+  .hero-buttons .btn-primary,
+  .hero-buttons .btn-secondary { width:100%; max-width:300px; justify-content:center; }
+
+  .stat-card { padding:1.3rem 1.6rem; min-width:120px; }
+  .stat-card h3 { font-size:2rem; }
+
+  .gallery-grid { grid-template-columns:1fr 1fr; }
   .footer-content { grid-template-columns:1fr; gap:2rem; }
   .admission-info { grid-template-columns:1fr; }
   .streams { grid-template-columns:1fr; }
   .about-text ul { grid-template-columns:1fr; }
+
+  /* Hide step connector line when steps stack vertically */
+  .admission-process::before { display:none; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — 480px (pocket phones)
+══════════════════════════════════════ */
+@media (max-width: 480px) {
+  section { padding:60px 0; }
+  .container { padding:0 16px; }
+
+  /* Header */
+  .header-main .container { padding:0.75rem 16px; }
+  .logo h1 { font-size:1.1rem; }
+  .logo p { display:none; } /* hide tagline on tiny screens */
+  .logo-icon-box { width:34px; height:34px; font-size:0.95rem; border-radius:9px; }
+
+  /* Hero */
+  .hero { padding:110px 16px 56px; }
+  .hero-eyebrow { font-size:0.68rem; padding:5px 13px; letter-spacing:0.07em; }
+  .hero h2 { font-size:1.85rem; line-height:1.18; }
+  .hero p { font-size:0.92rem; margin-bottom:1.8rem; }
+
+  /* Stats — 2×2 grid instead of free-floating flex */
+  .hero-stats {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px; margin-top:2.8rem; width:100%;
+  }
+  .stat-card { padding:1.1rem 1rem; min-width:unset; width:100%; }
+  .stat-card h3 { font-size:1.8rem; }
+  .stat-card p { font-size:0.72rem; }
+
+  /* Buttons */
+  .btn-primary, .btn-secondary { padding:11px 22px; font-size:0.88rem; }
+
+  /* Academics */
+  .academic-card { padding:1.6rem; }
+  .streams { grid-template-columns:1fr; gap:8px; }
+
+  /* Facilities */
+  .facilities-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  .facility-card { padding:1.4rem 1rem; }
+  .facility-icon { width:46px; height:46px; margin-bottom:0.9rem; }
+  .facility-card i { font-size:1.3rem; }
+  .facility-card h3 { font-size:0.92rem; }
+  .facility-card p { font-size:0.78rem; }
+
+  /* Admissions */
+  .admission-process { grid-template-columns:1fr 1fr; gap:12px; }
+  .admission-process::before { display:none; }
+  .process-step { padding:1.2rem 1rem; }
+  .process-step .step-number { width:40px; height:40px; font-size:1.1rem; }
+
+  /* Gallery */
+  .gallery-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  .gallery-item { height:160px; }
+
+  /* Footer */
+  .footer-content { grid-template-columns:1fr; gap:1.8rem; }
+  .footer { padding:3rem 0 1.2rem; }
+
+  /* Section headings */
+  .about h2, .academics h2, .facilities h2,
+  .admissions h2, .gallery h2, .contact h2 {
+    font-size:1.9rem; margin-bottom:1.6rem;
+  }
+  .sec-subtitle { font-size:0.88rem; margin-bottom:2rem; }
+
+  /* Contact */
+  .contact-form { padding:1.6rem; }
+  .contact-info .info-card { padding:1.1rem 1.2rem; gap:12px; }
+
+  /* Portal CTA */
+  .portal-cta-card { padding:1.6rem; gap:1.5rem; }
+  .portal-cta-icon { width:70px; height:70px; font-size:1.8rem; border-radius:18px; }
+
+  /* Toast — allow wrapping, don't overflow */
+  .main-toast {
+    white-space:normal; width:90vw; text-align:center;
+    justify-content:center; bottom:80px; /* above scroll-to-top */
+    border-radius:18px; padding:12px 18px;
+  }
+
+  /* Scroll-to-top — tuck into corner */
+  .scroll-top-btn { bottom:16px; right:16px; width:40px; height:40px; font-size:0.85rem; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — 360px (very small phones)
+══════════════════════════════════════ */
+@media (max-width: 360px) {
+  .hero h2 { font-size:1.65rem; }
+  .hero p { font-size:0.88rem; }
+  .hero-eyebrow { font-size:0.62rem; gap:5px; padding:4px 11px; }
+  .stat-card h3 { font-size:1.6rem; }
+  .stat-card p { font-size:0.68rem; }
+
+  /* 1-col facilities on very small */
+  .facilities-grid { grid-template-columns:1fr; }
+
+  /* 1-col admission steps */
+  .admission-process { grid-template-columns:1fr; }
+
+  /* Logo — minimal */
+  .logo h1 { font-size:1rem; }
+  .logo-icon-box { width:30px; height:30px; font-size:0.85rem; }
+
+  .btn-primary, .btn-secondary { padding:10px 18px; font-size:0.84rem; }
+  .gallery-item { height:130px; }
 }
 
 /* ── Student Portal CTA Section ── */

@@ -373,14 +373,20 @@ kbd{background:rgba(255,255,255,0.10);padding:2px 6px;border-radius:5px;font-siz
 /* ── Toast ── */
 .sp-toast{position:fixed;bottom:26px;right:26px;z-index:9999;padding:12px 18px;border-radius:12px;background:rgba(10,14,26,0.97);border:1px solid var(--teal);color:var(--text);font-size:0.85rem;box-shadow:0 8px 32px rgba(0,0,0,0.55);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;gap:9px;max-width:340px;transition:opacity 0.35s ease,transform 0.35s ease}
 
-/* ── Responsive ── */
+/* ══════════════════════════════════════
+   RESPONSIVE — 1080px
+══════════════════════════════════════ */
 @media(max-width:1080px){
   .sp-nav-link span{display:none}
   .sp-nav-link{padding:8px 9px}
   .portal-grid{grid-template-columns:240px 1fr}
 }
+
+/* ══════════════════════════════════════
+   RESPONSIVE — 900px  (tablet)
+══════════════════════════════════════ */
 @media(max-width:900px){
-  .sp-nav{display:none;position:fixed;top:var(--hh);left:0;right:0;background:rgba(7,9,15,0.97);backdrop-filter:blur(30px);flex-direction:column;padding:1.3rem 24px 1.8rem;border-bottom:1px solid rgba(255,255,255,0.09);gap:4px;z-index:999}
+  .sp-nav{display:none;position:fixed;top:var(--hh);left:0;right:0;background:rgba(7,9,15,0.97);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);flex-direction:column;padding:1.3rem 24px 1.8rem;border-bottom:1px solid rgba(255,255,255,0.09);gap:4px;z-index:999}
   .sp-nav.open{display:flex}
   .sp-nav-link span{display:inline}
   .sp-nav-link{padding:10px 14px;border-radius:10px}
@@ -393,7 +399,13 @@ kbd{background:rgba(255,255,255,0.10);padding:2px 6px;border-radius:5px;font-siz
   .fee-summary-row{grid-template-columns:1fr 1fr}
   .res-summary{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ══════════════════════════════════════
+   RESPONSIVE — 600px  (large phones)
+══════════════════════════════════════ */
 @media(max-width:600px){
+  .sp-section{padding:68px 0}
+  .sp-container{padding:0 18px}
   .fee-summary-row{grid-template-columns:1fr 1fr}
   .att-mini-row{grid-template-columns:1fr 1fr}
   .cert-grid{grid-template-columns:1fr 1fr}
@@ -403,7 +415,140 @@ kbd{background:rgba(255,255,255,0.10);padding:2px 6px;border-radius:5px;font-siz
   .dash-tiles{grid-template-columns:repeat(3,1fr)}
   .res-actions{flex-direction:column}
   .res-actions button{width:100%}
-  .sp-section{padding:70px 0}
   .tt-topbar{flex-direction:column;align-items:flex-start}
   .tt-topbar-right{width:100%}
+  /* Search bar stacks nicely */
+  .res-search-bar{flex-direction:column;align-items:stretch}
+  .res-search-bar .grow,.res-search-bar .sp-field{min-width:unset;width:100%}
+  .res-search-bar .self-end{align-self:stretch}
+  .res-search-bar .sp-btn-primary{width:100%;justify-content:center}
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — 480px  (pocket phones)
+══════════════════════════════════════ */
+@media(max-width:480px){
+  :root{--hh:60px}
+  .sp-section{padding:58px 0}
+  .sp-container{padding:0 15px}
+  .sp-header-inner{padding:0 15px;gap:0.6rem}
+
+  /* Logo — shrink slightly */
+  .sp-logo strong{font-size:0.82rem}
+  .sp-logo span{display:none}
+  .sp-logo-icon{width:32px;height:32px;font-size:0.9rem;border-radius:9px}
+
+  /* Back button — icon only */
+  .sp-back-btn{padding:6px 10px;font-size:0.75rem}
+
+  /* Section headings */
+  .sp-section-head h2{font-size:1.65rem}
+  .sp-section-head p{font-size:0.86rem}
+
+  /* Login */
+  .login-card{padding:1.6rem}
+  .login-avatar{width:58px;height:58px;font-size:1.6rem}
+  .login-avatar-wrap h3{font-size:1.2rem}
+
+  /* Dashboard tiles — 3 cols is too tight → 2×3 */
+  .dash-tiles{grid-template-columns:repeat(2,1fr);gap:6px}
+  .dash-tile{padding:0.8rem 0.4rem;font-size:0.7rem}
+  .dash-tile i{font-size:1rem}
+
+  /* Dash welcome bar */
+  .dash-welcome-bar{padding:10px 12px;gap:9px}
+  .dw-info strong{font-size:0.84rem}
+
+  /* Fee stats — 2×2 */
+  .fee-summary-row{grid-template-columns:1fr 1fr;gap:9px}
+  .fee-stat{padding:1rem 1rem;gap:10px}
+  .fee-stat h3{font-size:1.25rem}
+  .fstat-icon{width:38px;height:38px;font-size:1.1rem;border-radius:11px}
+
+  /* Attendance mini row — 2×2 */
+  .att-mini-row{grid-template-columns:1fr 1fr;gap:9px}
+  .att-mini{padding:1rem}
+  .att-mini strong{font-size:1.1rem}
+
+  /* Attendance big card */
+  .att-big-card{flex-direction:column;align-items:center;padding:1.4rem}
+
+  /* Subject attendance bar — reflow fixed columns */
+  .subj-row{grid-template-columns:90px 1fr 42px 48px;gap:7px}
+  .subj-name{font-size:0.77rem}
+  .subj-pct,.subj-days{font-size:0.74rem}
+
+  /* Timetable */
+  .tt-tabs{gap:4px}
+  .tt-tab{padding:7px 12px;font-size:0.77rem}
+  .tt-topbar-right{flex-direction:column;align-items:stretch}
+  .tt-topbar-right .sp-input{width:100%}
+  .tt-topbar-right .sp-btn-outline{width:100%;justify-content:center}
+  .tt-today-card{padding:1.1rem}
+  .tt-slot{flex-wrap:wrap;gap:4px}
+
+  /* Results */
+  .res-marks-grid{grid-template-columns:1fr 1fr;gap:9px}
+  .rmc{padding:0.9rem}
+  .res-summary{grid-template-columns:1fr 1fr}
+  .rs-cell{padding:0.8rem 0.9rem}
+  .rs-cell strong{font-size:0.88rem}
+  .rib-left h3{font-size:0.92rem}
+  .res-info-bar{padding:1.1rem}
+
+  /* Quick result cards — single col */
+  .res-quick-grid{grid-template-columns:1fr}
+
+  /* Cert grid */
+  .cert-grid{grid-template-columns:1fr 1fr;gap:9px}
+  .cert-card{padding:1.1rem}
+
+  /* Portal profile */
+  .portal-profile-card{padding:1.4rem}
+  .ppc-avatar{width:64px;height:64px;font-size:1.6rem}
+
+  /* Toast — prevent overflow */
+  .sp-toast{
+    left:15px;right:15px;bottom:15px;
+    max-width:unset;width:calc(100% - 30px);
+    font-size:0.81rem;
+  }
+
+  /* Footer */
+  .sp-footer p{font-size:0.76rem}
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — 360px  (very small phones)
+══════════════════════════════════════ */
+@media(max-width:360px){
+  .sp-section{padding:50px 0}
+  .sp-container{padding:0 12px}
+  .sp-section-head h2{font-size:1.45rem}
+
+  /* Logo minimal */
+  .sp-logo strong{font-size:0.76rem}
+  .sp-logo-icon{width:28px;height:28px;font-size:0.78rem}
+
+  /* Fee stats — still 2 col but tighter */
+  .fee-stat{padding:0.85rem 0.75rem;gap:8px}
+  .fee-stat h3{font-size:1.1rem}
+  .fstat-icon{width:34px;height:34px;font-size:0.95rem}
+
+  /* Marks grid — single col on very tiny */
+  .res-marks-grid{grid-template-columns:1fr}
+
+  /* Subject row — stack % and days */
+  .subj-row{grid-template-columns:80px 1fr 42px;gap:5px}
+  .subj-days{display:none}
+
+  /* Cert grid — single col */
+  .cert-grid{grid-template-columns:1fr}
+
+  /* Dash tiles — 2 col */
+  .dash-tiles{grid-template-columns:repeat(2,1fr)}
+
+  /* Timetable tabs */
+  .tt-tab{padding:6px 10px;font-size:0.73rem}
+  .tt-tab i{display:none}
 }
