@@ -937,7 +937,7 @@ let DB = {
   fees: {},        // populated from student_portal.js FEES at runtime
 };
 
-const PERIODS = ['7:30–8:15','8:15–9:00','9:00–9:45','BREAK','10:00–10:45','10:45–11:30','11:30–12:15','LUNCH','1:00–1:45','1:45–2:30'];
+const ADM_PERIODS = ['7:30–8:15','8:15–9:00','9:00–9:45','BREAK','10:00–10:45','10:45–11:30','11:30–12:15','LUNCH','1:00–1:45','1:45–2:30'];
 let editingKey = null; // tracks which item we're editing
 
 /* ══════════════════════════════════════
@@ -1030,7 +1030,7 @@ function loadDB(){
 }
 
 /* ══════════════════════════════════════
-   AUTH
+   ADM_AUTH
 ══════════════════════════════════════ */
 function doAdminLogin(){
   const u = document.getElementById('loginUser').value.trim();
@@ -1926,7 +1926,7 @@ function renderTTEditor(){
   if(!tt){ document.getElementById('ttEditorGrid').innerHTML='<p style="color:var(--muted);padding:1rem">No timetable for this class.</p>'; renderExamTable(cls); return; }
   const days= Object.keys(tt.days);
   let html  = `<div class="tt-edit-grid"><div class="tt-row header"><div class="tt-cell">Time</div>${days.map(d=>`<div class="tt-cell">${d.slice(0,3)}</div>`).join('')}</div>`;
-  PERIODS.forEach((p,i)=>{
+  ADM_PERIODS.forEach((p,i)=>{
     if(p==='BREAK'||p==='LUNCH'){
       html+=`<div class="tt-row"><div class="tt-break-row"><div class="tt-cell">— ${p} —</div></div></div>`;
     } else {
@@ -2108,7 +2108,7 @@ function exportJS(){
 'use strict';
 
 /* ─── Auth state ─── */
-let AUTH = { loggedIn: false, student: null };
+let ADM_AUTH = { loggedIn: false, student: null };
 
 /* ─── Student DB ─── */
 const STUDENTS = ${JSON.stringify(s, null, 2)};
@@ -2134,11 +2134,11 @@ const ATT_MAP = (() => {
 })();
 
 /* ─── Timetable data — per class ─── */
-const PERIODS = ${JSON.stringify(PERIODS)};
+const ADM_PERIODS = ${JSON.stringify(ADM_PERIODS)};
 
-const TT_DATA = ${JSON.stringify(tt, null, 2)};
+const ADM_TT_DATA = ${JSON.stringify(tt, null, 2)};
 
-const SUB_COL={
+const ADM_SUB_COL={
   Physics:'rgba(79,195,195,.17)',Chemistry:'rgba(232,107,138,.17)',
   Mathematics:'rgba(245,200,66,.17)',Biology:'rgba(120,200,120,.17)',
   English:'rgba(180,150,255,.17)',Hindi:'rgba(255,180,100,.17)',
@@ -2149,7 +2149,7 @@ const SUB_COL={
   'Chemistry Lab':'rgba(232,107,138,.12)',
   'Free Period':'rgba(255,255,255,.04)',
 };
-const sc=s=>s?(SUB_COL[s]||'rgba(255,255,255,.08)'):'rgba(255,255,255,.02)';
+const adm_sc=s=>s?(ADM_SUB_COL[s]||'rgba(255,255,255,.08)'):'rgba(255,255,255,.02)';
 
 /* ═══════════════════════════════════
    BOOT
@@ -2181,7 +2181,7 @@ function initHeader(){
       e.preventDefault();
       const sec=link.dataset.sec;
       const isAuth=link.classList.contains('sp-nav-auth');
-      if(isAuth && !AUTH.loggedIn){
+      if(isAuth && !ADM_AUTH.loggedIn){
         showToast('Please log in to access this section','error');
         document.getElementById('login').scrollIntoView({behavior:'smooth',block:'start'});
         closeNav(); return;
@@ -2211,7 +2211,7 @@ function closeNav(){
 }
 
 /* ═══════════════════════════════════
-   AUTH GATE
+   ADM_AUTH GATE
 ═══════════════════════════════════ */
 function lockAuthSections(){
   document.querySelectorAll('.sp-protected').forEach(s=>{s.style.display='none';s.classList.remove('revealed')});
@@ -2243,7 +2243,7 @@ window.doLogin=function(){
     shake(document.querySelector('.login-card'));
     showToast('Invalid Roll Number or Password','error'); return;
   }
-  AUTH={loggedIn:true,student:st};
+  ADM_AUTH={loggedIn:true,student:st};
   document.getElementById('loginFormWrap').style.display='none';
   document.getElementById('loginDashboard').style.display='block';
   document.getElementById('dashName').textContent=st.name;
@@ -2258,7 +2258,7 @@ window.doLogin=function(){
   showToast(\`Welcome, \${st.name}!\`,'success');
 };
 window.doLogout=function(){
-  AUTH={loggedIn:false,student:null};
+  ADM_AUTH={loggedIn:false,student:null};
   sessionStorage.removeItem('sp_roll');
   lockAuthSections();
   document.getElementById('loginFormWrap').style.display='flex';
@@ -2270,7 +2270,7 @@ window.doLogout=function(){
   showToast('Logged out successfully','info');
 };
 window.gotoSection=function(id){
-  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  if(!ADM_AUTH.loggedIn){showToast('Please log in first','error');return}
   const el=document.getElementById(id);
   if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 };
@@ -2369,7 +2369,7 @@ window.printMarksheet=function(){if(!_currentResult){showToast('Search a result 
 /* ═══════════════════════════════════
    TIMETABLE
 ═══════════════════════════════════ */
-let curTTCls=11;
+let adm_curTTCls=11;
 function initTimetable(){
   document.getElementById('todayDateStr').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   renderWeeklyTT(); renderExamTT(); renderTodaySlots();
@@ -2381,42 +2381,42 @@ window.switchTT=function(btn,tab){
   document.getElementById('ttExamWrap').style.display=tab==='exam'?'block':'none';
 };
 window.changeTTClass=function(v){
-  curTTCls=parseInt(v);
+  adm_curTTCls=parseInt(v);
   renderWeeklyTT(); renderExamTT(); renderTodaySlots();
-  const tt=TT_DATA[curTTCls]||TT_DATA[11];
+  const tt=ADM_TT_DATA[adm_curTTCls]||ADM_TT_DATA[11];
   const hdr=document.querySelector('.tt-today-header h4');
   if(hdr) hdr.innerHTML=\`<i class="fas fa-sun"></i> Today's Schedule <small style="font-weight:400;opacity:.6;font-size:.78em">— \${tt.label}</small>\`;
 };
 function renderWeeklyTT(){
-  const tt=TT_DATA[curTTCls]||TT_DATA[11];
+  const tt=ADM_TT_DATA[adm_curTTCls]||ADM_TT_DATA[11];
   const days=Object.keys(tt.days);
   let html=\`<thead><tr><th style="text-align:left;min-width:105px">Time</th>\${days.map(d=>\`<th>\${d}</th>\`).join('')}</tr></thead><tbody>\`;
-  PERIODS.forEach((p,i)=>{
+  ADM_PERIODS.forEach((p,i)=>{
     if(p==='BREAK'||p==='LUNCH'){html+=\`<tr><td colspan="\${days.length+1}" class="tt-break-td">— \${p} —</td></tr>\`;}
-    else{html+=\`<tr><td class="tt-period-td">\${p}</td>\`;days.forEach(d=>{const s=tt.days[d][i];html+=\`<td style="background:\${sc(s)}">\${s||'—'}</td>\`;});html+=\`</tr>\`;}
+    else{html+=\`<tr><td class="tt-period-td">\${p}</td>\`;days.forEach(d=>{const s=tt.days[d][i];html+=\`<td style="background:\${adm_sc(s)}">\${s||'—'}</td>\`;});html+=\`</tr>\`;}
   });
   document.getElementById('weeklyTable').innerHTML=html+'</tbody>';
 }
 function renderExamTT(){
-  const tt=TT_DATA[curTTCls]||TT_DATA[11];
+  const tt=ADM_TT_DATA[adm_curTTCls]||ADM_TT_DATA[11];
   let html=\`<thead><tr><th>Date</th><th>Day</th><th>Subject</th><th>Time</th><th>Venue</th></tr></thead><tbody>\`;
-  tt.exam.forEach(e=>{html+=\`<tr><td><strong>\${e.date}</strong></td><td>\${e.day}</td><td style="background:\${sc(e.sub)};font-weight:600">\${e.sub}</td><td>\${e.time}</td><td>\${e.venue}</td></tr>\`;});
+  tt.exam.forEach(e=>{html+=\`<tr><td><strong>\${e.date}</strong></td><td>\${e.day}</td><td style="background:\${adm_sc(e.sub)};font-weight:600">\${e.sub}</td><td>\${e.time}</td><td>\${e.venue}</td></tr>\`;});
   document.getElementById('examTable').innerHTML=html+'</tbody>';
 }
 function renderTodaySlots(){
-  const tt=TT_DATA[curTTCls]||TT_DATA[11];
+  const tt=ADM_TT_DATA[adm_curTTCls]||ADM_TT_DATA[11];
   const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const today=DAYS[new Date().getDay()];
   const sched=tt.days[today]||tt.days['Monday'];
   let html='';
   sched.forEach((sub,i)=>{
     if(!sub)return;
-    const p=PERIODS[i];
+    const p=ADM_PERIODS[i];
     if(!p||p==='BREAK'||p==='LUNCH')return;
     const teacher=tt.teachers?.[sub]||'';
     html+=\`<div class="tt-slot" style="border-left:3px solid \${sub==='Free Period'?'rgba(255,255,255,.15)':'var(--teal)'}">
       <span class="tt-slot-time">\${p}</span>
-      <span class="tt-slot-sub" style="background:\${sc(sub)}">\${sub}</span>
+      <span class="tt-slot-sub" style="background:\${adm_sc(sub)}">\${sub}</span>
       \${teacher?\`<span class="tt-slot-teacher">\${teacher}</span>\`:''}
     </div>\`;
   });
@@ -2424,10 +2424,10 @@ function renderTodaySlots(){
 }
 window.downloadTimetable=function(){
   const cls=parseInt(document.getElementById('ttClassSelect').value||'11');
-  const tt=TT_DATA[cls]||TT_DATA[11];
+  const tt=ADM_TT_DATA[cls]||ADM_TT_DATA[11];
   const days=Object.keys(tt.days);
   let rows='';
-  PERIODS.forEach((p,i)=>{
+  ADM_PERIODS.forEach((p,i)=>{
     if(p==='BREAK'||p==='LUNCH'){rows+=\`<tr><td colspan="\${days.length+1}" style="text-align:center;background:#f0f0f0;color:#888;font-size:12px;padding:5px">\${p}</td></tr>\`;}
     else{rows+=\`<tr><td style="font-size:12px;color:#666;white-space:nowrap">\${p}</td>\`;days.forEach(d=>{const s=tt.days[d][i];rows+=\`<td style="text-align:center;font-weight:\${s?'600':'400'}">\${s||'—'}</td>\`;});rows+='</tr>';}
   });
@@ -2443,7 +2443,7 @@ window.filterFees=function(filter){renderFeeTable(filter);}
 function renderFeeTable(filter='all'){
   const tbody=document.getElementById('feeTableBody');
   if(!tbody)return;
-  const roll=AUTH.student?.roll||'';
+  const roll=ADM_AUTH.student?.roll||'';
   const studentFees=FEES[roll]||[];
   const rows=filter==='all'?studentFees:studentFees.filter(f=>f.status===filter);
   tbody.innerHTML=rows.map(f=>\`
@@ -2469,7 +2469,7 @@ function updateFeeStats(roll){
   if(elDue)     elDue.textContent    =nextDue?nextDue.due:'—';
 }
 window.downloadFeeStatement=function(){
-  const st=AUTH.student;
+  const st=ADM_AUTH.student;
   if(!st)return;
   const studentFees=FEES[st.roll]||[];
   const rows=studentFees.map(f=>\`<tr><td>\${f.q}</td><td>\${f.type}</td><td>₹\${f.amt.toLocaleString('en-IN')}</td><td>\${f.due}</td><td>\${f.paid}</td><td style="font-weight:600;color:\${f.status==='paid'?'#1a9e6b':f.status==='pending'?'#c0392b':'#e67e22'}">\${f.status.toUpperCase()}</td></tr>\`).join('');
@@ -2480,8 +2480,8 @@ window.downloadFeeStatement=function(){
   showToast('Fee statement downloaded!','success');
 };
 window.downloadReceipt=function(q,type,amt,paidOn){
-  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
-  const st=AUTH.student;
+  if(!ADM_AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=ADM_AUTH.student;
   const receiptNo='RCPT'+Date.now().toString().slice(-8);
   const html=\`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt</title><style>body{font-family:Arial,sans-serif;max-width:500px;margin:40px auto;color:#111}.receipt{border:2px solid #1a1a2e;padding:30px;border-radius:8px}.school-name{font-size:18px;font-weight:bold;text-align:center;color:#1a1a2e;margin-bottom:4px}.school-addr{font-size:12px;text-align:center;color:#555;margin-bottom:20px}.rcpt-title{text-align:center;font-size:15px;font-weight:bold;text-decoration:underline;margin-bottom:20px}.info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eee;font-size:13px}.amount-box{background:#f0f9ff;border:1px solid #1a9e6b;border-radius:6px;padding:15px;text-align:center;margin:20px 0}.amount-box span{display:block;font-size:12px;color:#666;margin-bottom:6px}.amount-box strong{font-size:24px;color:#1a9e6b;font-weight:bold}.stamp{color:#1a9e6b;font-size:20px;font-weight:bold;text-align:center;border:3px solid #1a9e6b;border-radius:50%;width:60px;height:60px;display:flex;align-items:center;justify-content:center;margin:10px auto}.footer{font-size:11px;color:#999;text-align:center;margin-top:20px}</style></head><body><div class="receipt"><div class="school-name">Ram Krishna Paramhans Inter College</div><div class="school-addr">Bajaj Bagh, Nangal (Nagal), Saharanpur, UP 247551</div><div class="rcpt-title">FEE RECEIPT</div><div class="info-row"><span>Receipt No.</span><strong>\${receiptNo}</strong></div><div class="info-row"><span>Student</span><strong>\${st.name}</strong></div><div class="info-row"><span>Roll No.</span><strong>\${st.roll}</strong></div><div class="info-row"><span>Quarter</span><strong>\${q}</strong></div><div class="info-row"><span>Fee Type</span><strong>\${type}</strong></div><div class="info-row"><span>Date</span><strong>\${paidOn}</strong></div><div class="amount-box"><span>Amount Paid</span><strong>₹\${amt.toLocaleString('en-IN')}</strong></div><div style="text-align:center"><div class="stamp">✓</div></div><div class="footer">Computer-generated receipt · RKPH Inter College</div></div></body></html>\`;
   triggerDownload(\`Receipt_\${receiptNo}.html\`,html);
@@ -2515,7 +2515,7 @@ function renderCalendar(){
 }
 function renderSubjBars(){
   // With calendar-based attendance, show monthly summary stats
-  const roll = AUTH.student?.roll||'';
+  const roll = ADM_AUTH.student?.roll||'';
   const {present, absent, late, total, overall} = getStudentAttendanceSummary(roll);
   const el = document.getElementById('subjAttendList');
   if(!el) return;
@@ -2536,8 +2536,8 @@ function renderSubjBars(){
   updateAttendanceStats(roll);
 }
 window.downloadAttendance=function(){
-  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
-  const st=AUTH.student;
+  if(!ADM_AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=ADM_AUTH.student;
   const {present, absent, late, total, overall} = getStudentAttendanceSummary(st.roll);
   if(total===0){showToast('No attendance data available','info');return}
   const html=\`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Attendance – \${st.name}</title>
@@ -2611,7 +2611,7 @@ function populatePortal(st){
     : '<p style="opacity:.45;font-size:.85rem">No notices at the moment.</p>';
 
   // Assignments
-  const myAssigns=(ASSIGNS[st.roll]||[]).filter(a=>!a.session||a.session===AUTH.student?.currentSession||true);
+  const myAssigns=(ASSIGNS[st.roll]||[]).filter(a=>!a.session||a.session===ADM_AUTH.student?.currentSession||true);
   document.getElementById('assignList').innerHTML = myAssigns.length
     ? myAssigns.map(a=>\`
     <div class="assign-item">
@@ -2641,7 +2641,7 @@ function updateAttendanceStats(roll){
   }
 }
 window.downloadIDCard=function(){
-  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  if(!ADM_AUTH.loggedIn){showToast('Please log in first','error');return}
   showToast('ID Card downloaded!','success');
 };
 window.downloadStudyMaterial=function(){showToast('Study material download initiated!','success');};
@@ -2672,7 +2672,7 @@ function populateCertificates(){
     </div>\`).join('');
 }
 window.downloadCert=function(name){
-  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  if(!ADM_AUTH.loggedIn){showToast('Please log in first','error');return}
   showToast(\`\${name} downloaded!\`,'success');
 };
 window.submitCertRequest=function(){
@@ -2684,17 +2684,17 @@ window.submitCertRequest=function(){
 /* ═══════════════════════════════════
    TOAST
 ═══════════════════════════════════ */
-let _tt=null;
+let adm_tt=null;
 window.showToast=function(msg,type='info'){
   const C={success:'var(--teal)',error:'var(--rose)',info:'var(--amber)'};
   const I={success:'check-circle',error:'times-circle',info:'info-circle'};
   const el=document.getElementById('spToast');
   if(!el)return;
-  clearTimeout(_tt);
+  clearTimeout(adm_tt);
   el.style.borderColor=C[type];
   el.innerHTML=\`<i class="fas fa-\${I[type]}" style="color:\${C[type]};flex-shrink:0"></i><span>\${msg}</span>\`;
   el.style.display='flex'; el.style.opacity='1'; el.style.transform='translateY(0)';
-  _tt=setTimeout(()=>{
+  adm_tt=setTimeout(()=>{
     el.style.opacity='0'; el.style.transform='translateY(10px)';
     setTimeout(()=>el.style.display='none',380);
   },3500);

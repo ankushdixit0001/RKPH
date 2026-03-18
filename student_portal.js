@@ -1,11 +1,11 @@
+'use strict';
+
 /* =====================================================
    RKPH Student Portal — student_portal.js
    Auth rules:
      PUBLIC  : #results, #timetable (search by name OR roll, no login)
      PRIVATE : #fees, #attendance, #portal, #certificates (login required)
    ===================================================== */
-'use strict';
-
 /* ─── Auth state ─── */
 let AUTH = { loggedIn: false, student: null };
 
@@ -16420,6 +16420,10 @@ const sc=s=>s?(SUB_COL[s]||'rgba(255,255,255,.08)'):'rgba(255,255,255,.02)';
    BOOT
 ═══════════════════════════════════ */
 document.addEventListener('DOMContentLoaded',()=>{
+  // Only boot student portal UI if the portal's header element exists.
+  // When loaded by admin_panel.html, skip all portal-specific init.
+  if(!document.getElementById('spHeader')) return;
+
   initHeader();
   lockAuthSections();        // hide private sections initially
   initResults();             // public
@@ -23085,3 +23089,5 @@ function injectShakeCSS(){
   s.textContent=`@keyframes shakeCard{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}`;
   document.head.appendChild(s);
 }
+
+
