@@ -18589,9 +18589,22 @@ const HISTORY = {
 
 /* ─── Notices ─── */
 const NOTICES = {
-  "global": [],
-  "class": {},
-  "private": {}
+  global: [
+    {t:'Annual Examination Schedule Released',d:'18 Mar 2026',tag:'Exam',u:true},
+    {t:'Fee Submission Last Date: 15 April 2026',d:'15 Mar 2026',tag:'Finance',u:true},
+    {t:'Sports Day — 25 March 2026',d:'12 Mar 2026',tag:'Event',u:false},
+    {t:'Holi Holiday — 14 March 2026',d:'10 Mar 2026',tag:'Holiday',u:false},
+    {t:'Parent-Teacher Meeting: 28 March 2026',d:'08 Mar 2026',tag:'Meeting',u:false},
+    {t:'Annual Prize Distribution — 5 April 2026',d:'01 Mar 2026',tag:'Event',u:false},
+  ],
+  class: {
+    'Class 12':[{t:'Board Exam ongoing — Best of luck!',d:'18 Mar 2026',tag:'Exam',u:true}],
+    'Class 11':[{t:'Practical Exam — 5 Apr 2026. Bring lab records.',d:'20 Mar 2026',tag:'Exam',u:true}],
+    'Class 10':[{t:'Board Exam completed. Results expected by June 2026.',d:'10 Mar 2026',tag:'Exam',u:false}],
+    'Class 9':[{t:'Annual Exam starts 1 April 2026. Prepare well.',d:'12 Mar 2026',tag:'Exam',u:false}],
+    'Class 8':[{t:'Annual Exam starts 3 April 2026.',d:'12 Mar 2026',tag:'Exam',u:false}],
+  },
+  private: {}
 };
 
 /* ─── Timetable ─── */
