@@ -206,7 +206,8 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
-<!-- student_portal.js loaded first — admin panel reads STUDENTS, RESULTS, FEES, ASSIGNS, ATTENDANCE, HISTORY directly from it -->
+<!-- rkph_data.js is the single data source — admin reads from it, exports updated version -->
+<script src="rkph_data.js"></script>
 
 <!-- ── LOGIN ── -->
 <div id="loginScreen">
@@ -607,39 +608,72 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- Architecture diagram -->
+      <div style="background:rgba(79,195,195,0.05);border:1px solid rgba(79,195,195,0.15);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.4rem">
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--teal);margin-bottom:0.9rem"><i class="fas fa-sitemap"></i> How It Works</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:0.83rem">
+          <div style="background:rgba(79,195,195,0.12);border:1px solid rgba(79,195,195,0.3);border-radius:8px;padding:8px 14px;text-align:center">
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:2px">Data Source</div>
+            <div style="font-weight:700;color:var(--teal)"><i class="fas fa-database"></i> rkph_data.js</div>
+          </div>
+          <div style="color:var(--muted);font-size:1.2rem">→</div>
+          <div style="display:flex;gap:8px;flex-direction:column">
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 12px;font-size:0.78rem"><i class="fas fa-graduation-cap" style="color:var(--teal)"></i> student_portal.html reads it</div>
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 12px;font-size:0.78rem"><i class="fas fa-shield-alt" style="color:var(--amber)"></i> admin_panel.html reads it</div>
+          </div>
+          <div style="color:var(--muted);font-size:1.2rem">→</div>
+          <div style="background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.25);border-radius:8px;padding:8px 14px;font-size:0.78rem;text-align:center">
+            <div style="color:var(--amber);font-weight:600">Admin makes changes</div>
+            <div style="color:var(--muted);font-size:.7rem;margin-top:2px">exports new rkph_data.js</div>
+          </div>
+          <div style="color:var(--muted);font-size:1.2rem">→</div>
+          <div style="background:rgba(79,195,195,0.1);border:1px solid rgba(79,195,195,0.25);border-radius:8px;padding:8px 14px;font-size:0.78rem;text-align:center">
+            <div style="color:var(--teal);font-weight:600">Replace 1 file</div>
+            <div style="color:var(--muted);font-size:.7rem;margin-top:2px">both portal & admin updated</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Export Cards -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.4rem">
 
-        <!-- Student Portal JS -->
-        <div class="export-card">
-          <div style="width:56px;height:56px;border-radius:16px;background:rgba(79,195,195,0.14);border:1px solid rgba(79,195,195,0.28);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--teal);margin:0 auto 1rem"><i class="fas fa-file-code"></i></div>
-          <h3 style="font-size:1.1rem;margin-bottom:0.4rem">student_portal.js</h3>
-          <p style="font-size:0.82rem;margin-bottom:1.2rem">Exports all student data, marks, fees, attendance, notices into the portal JS file. Upload to your website to make changes live.</p>
+        <!-- rkph_data.js — PRIMARY EXPORT -->
+        <div class="export-card" style="border-color:rgba(79,195,195,0.35);position:relative">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--teal);color:#0a0e1a;font-size:0.62rem;font-weight:800;padding:2px 10px;border-radius:99px;letter-spacing:.06em;white-space:nowrap">PRIMARY EXPORT</div>
+          <div style="width:56px;height:56px;border-radius:16px;background:rgba(79,195,195,0.18);border:1px solid rgba(79,195,195,0.35);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--teal);margin:0.8rem auto 1rem"><i class="fas fa-database"></i></div>
+          <h3 style="font-size:1.1rem;margin-bottom:0.4rem">rkph_data.js</h3>
+          <p style="font-size:0.82rem;margin-bottom:1.2rem">The single data file. Contains all students, marks, fees, attendance, notices, timetable. Replace this one file on your website — both portal and admin panel update automatically.</p>
           <div class="export-steps" style="grid-template-columns:1fr;gap:8px;margin-bottom:1.2rem">
-            <div class="step-box"><div class="step-num">1</div><p>Make all changes in this panel.</p></div>
-            <div class="step-box"><div class="step-num">2</div><p>Download <strong>student_portal.js</strong>.</p></div>
-            <div class="step-box"><div class="step-num">3</div><p>Replace old file on your website.</p></div>
+            <div class="step-box"><div class="step-num">1</div><p>Make any changes in this panel.</p></div>
+            <div class="step-box"><div class="step-num">2</div><p>Download <strong>rkph_data.js</strong>.</p></div>
+            <div class="step-box"><div class="step-num">3</div><p>Replace old <strong>rkph_data.js</strong> on website. Done.</p></div>
           </div>
-          <button class="btn btn-primary" style="width:100%;padding:12px" onclick="exportJS()"><i class="fas fa-download"></i> Download student_portal.js</button>
+          <button class="btn btn-primary" style="width:100%;padding:12px;font-size:0.92rem" onclick="exportDataFile()"><i class="fas fa-download"></i> Download rkph_data.js</button>
+          <div style="margin-top:0.6rem;font-size:0.72rem;color:var(--muted);text-align:center" id="exportMeta"></div>
         </div>
 
         <!-- Admin Panel HTML -->
-        <div class="export-card" style="border-color:rgba(245,200,66,0.28);background:linear-gradient(135deg,rgba(245,200,66,0.08),rgba(79,195,195,0.04))">
+        <div class="export-card" style="border-color:rgba(245,200,66,0.28);background:linear-gradient(135deg,rgba(245,200,66,0.06),rgba(79,195,195,0.03))">
           <div style="width:56px;height:56px;border-radius:16px;background:rgba(245,200,66,0.14);border:1px solid rgba(245,200,66,0.28);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--amber);margin:0 auto 1rem"><i class="fas fa-shield-alt"></i></div>
           <h3 style="font-size:1.1rem;margin-bottom:0.4rem">admin_panel.html</h3>
-          <p style="font-size:0.82rem;margin-bottom:1.2rem">Saves the admin panel itself with all current DB data baked in. Next time you open this file, all students & records are already there.</p>
+          <p style="font-size:0.82rem;margin-bottom:1.2rem">Saves the admin panel itself. Use this to keep a backup of the panel with all your settings. For data updates, use rkph_data.js above.</p>
           <div class="export-steps" style="grid-template-columns:1fr;gap:8px;margin-bottom:1.2rem">
-            <div class="step-box"><div class="step-num">1</div><p>Add students, marks, anything.</p></div>
+            <div class="step-box"><div class="step-num">1</div><p>Backup before major changes.</p></div>
             <div class="step-box"><div class="step-num">2</div><p>Download <strong>admin_panel.html</strong>.</p></div>
-            <div class="step-box"><div class="step-num">3</div><p>Replace old admin file — all data saved.</p></div>
+            <div class="step-box"><div class="step-num">3</div><p>Store safely as backup.</p></div>
           </div>
-          <button class="btn btn-primary" style="width:100%;padding:12px;background:rgba(245,200,66,0.18);border-color:rgba(245,200,66,0.4);color:var(--amber)" onclick="exportAdminHTML()"><i class="fas fa-download"></i> Download admin_panel.html</button>
+          <button class="btn btn-primary" style="width:100%;padding:12px;background:rgba(245,200,66,0.15);border-color:rgba(245,200,66,0.35);color:var(--amber)" onclick="exportAdminHTML()"><i class="fas fa-download"></i> Download admin_panel.html</button>
         </div>
 
       </div>
 
       <div style="text-align:center;padding:1rem 0;border-top:1px solid rgba(255,255,255,0.07);margin-top:0.5rem">
-        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.8rem">Both files together = your complete school website. Keep them in the same folder.</p>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.8rem">
+          Keep all 4 files in the same folder on your website:<br>
+          <code style="background:rgba(255,255,255,.07);padding:2px 8px;border-radius:4px;font-size:.78rem">rkph_data.js &nbsp; student_portal.js &nbsp; student_portal.html &nbsp; student_portal.css &nbsp; index.html &nbsp; admin_panel.html</code>
+        </p>
         <button class="btn btn-ghost" onclick="if(confirm('Clear ALL saved data and reset to defaults?')){localStorage.removeItem(LS_KEY);location.reload();}"><i class="fas fa-trash"></i> Clear All Data</button>
       </div>
     </div>
@@ -20450,6 +20484,13 @@ function refreshSessionStats(){
     ].filter(Boolean));
     count.textContent = sessions.size||'1';
   }
+  // Update export meta info
+  const meta = document.getElementById('exportMeta');
+  if(meta){
+    const stuCount = Object.keys(DB.students).length;
+    const resCount = Object.keys(DB.results).length;
+    meta.textContent = `${stuCount} students · ${resCount} results · Session ${DB.currentSession||'2025-26'}`;
+  }
 }
 
 function populateMarksClassFilter(){
@@ -21440,46 +21481,61 @@ function saveFee(){
 }
 
 /* ══════════════════════════════════════
-   EXPORT — Generate student_portal.js
+   EXPORT — Generate rkph_data.js (single data file)
 ══════════════════════════════════════ */
-function exportJS(){
+function exportDataFile(){
   saveDB();
   const s=DB.students, r=DB.results, n=DB.notices,
         asgn=DB.assigns, f=DB.fees, tt=DB.timetable,
         att=DB.attendance, hist=DB.history||{};
 
-  // Build history from current session-based student data
-  // (kept in DB.history if admin has set it, otherwise empty)
+  const now = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
 
-  const header = `/* =====================================================
-   RKPH Student Portal — student_portal.js
-   Auto-generated by Admin Panel on ` + new Date().toLocaleString('en-IN') + `
+  const dataJS = `/* =====================================================
+   RKPH Data File — rkph_data.js
+   Generated by Admin Panel on ${now}
+   
+   SINGLE SOURCE OF TRUTH — Both student portal and admin
+   panel read data from this file.
+   
+   How to update:
+   1. Open admin_panel.html → make changes
+   2. Save & Export → Download rkph_data.js
+   3. Replace rkph_data.js on your website
+   4. Both portal and admin panel are now updated
    ===================================================== */
-'use strict';
 
-let AUTH = { loggedIn: false, student: null };
+const RKPH_DATA_VERSION = ${(typeof RKPH_DATA_VERSION !== 'undefined' ? RKPH_DATA_VERSION + 1 : 1)};
+const RKPH_GENERATED    = '${now}';
+const RKPH_SESSION      = '${DB.currentSession || '2025-26'}';
 
+/* ─── Students ─── */
 const STUDENTS = ` + JSON.stringify(s, null, 2) + `;
 
+/* ─── Results ─── */
 const RESULTS = ` + JSON.stringify(r, null, 2) + `;
 
+/* ─── Fees ─── */
 const FEES = ` + JSON.stringify(f, null, 2) + `;
 
+/* ─── Assignments ─── */
 const ASSIGNS = ` + JSON.stringify(asgn, null, 2) + `;
 
+/* ─── Attendance ─── */
 const ATTENDANCE = ` + JSON.stringify(att, null, 2) + `;
 
+/* ─── Academic History ─── */
 const HISTORY = ` + JSON.stringify(hist, null, 2) + `;
 
+/* ─── Notices ─── */
 const NOTICES = ` + JSON.stringify(n, null, 2) + `;
 
-let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+/* ─── Timetable ─── */
+const PERIODS = ` + JSON.stringify(ADM_PERIODS) + `;
+const TT_DATA = ` + JSON.stringify(tt, null, 2) + `;
 
-const PERIODS=` + JSON.stringify(ADM_PERIODS) + `;
-
-const TT_DATA=` + JSON.stringify(tt, null, 2) + `;
-
-const SUB_COL={
+/* ─── Subject colour map ─── */
+const SUB_COL = {
   Physics:'rgba(79,195,195,.17)',Chemistry:'rgba(232,107,138,.17)',
   Mathematics:'rgba(245,200,66,.17)',Biology:'rgba(120,200,120,.17)',
   English:'rgba(180,150,255,.17)',Hindi:'rgba(255,180,100,.17)',
@@ -21490,26 +21546,21 @@ const SUB_COL={
   'Chemistry Lab':'rgba(232,107,138,.12)',Drawing:'rgba(255,200,100,.17)',
   'Free Period':'rgba(255,255,255,.04)',
 };
-const sc=s=>s?(SUB_COL[s]||'rgba(255,255,255,.08)'):'rgba(255,255,255,.02)';
+const sc = s => s ? (SUB_COL[s] || 'rgba(255,255,255,.08)') : 'rgba(255,255,255,.02)';
 `;
 
-  // The portal functions (everything from DOMContentLoaded onward)
-  // These are baked into this admin panel and always up to date
-  const portalFunctions = document.getElementById('_sp_functions_template').textContent;
-
-  const fullJS = header + '\n' + portalFunctions;
-
-  triggerDownloadText('student_portal.js', fullJS);
-  toast('student_portal.js downloaded! Replace old file on your website.','success');
+  triggerDownloadText('rkph_data.js', dataJS);
+  toast('rkph_data.js downloaded! Replace on your website — both portal & admin updated.', 'success');
 }
+
+/* Legacy alias — exportJS also exports rkph_data.js now */
+function exportJS(){ exportDataFile(); }
 
 function exportAdminHTML(){
   saveDB();
-  // Get current admin panel HTML
   const html = document.documentElement.outerHTML;
-  // The current page IS the admin panel with all data - just save it
   triggerDownloadText('admin_panel.html', '<!DOCTYPE html>\n' + html);
-  toast('admin_panel.html downloaded! Replace old file to keep all changes.','success');
+  toast('admin_panel.html downloaded! Replace old file to keep all changes.', 'success');
 }
 
 function triggerDownloadText(filename, content){
@@ -21675,7 +21726,7 @@ function toast(msg, type='success'){
   el.innerHTML=`<i class="fas fa-${icons[type]}" style="color:${colors[type]};flex-shrink:0"></i><span>${msg}</span>`;
   el.classList.add('show');
   _toastTimer=setTimeout(()=>el.classList.remove('show'),3500);
-}-e 
+}
 </script>
 
 <!-- Portal functions template for export -->
@@ -21912,7 +21963,6 @@ window.printMarksheet=function(){if(!_currentResult){showToast('Search a result 
 /* ═══════════════════════════════════
    TIMETABLE
 ═══════════════════════════════════ */
-let curTTCls=11;
 function initTimetable(){
   document.getElementById('todayDateStr').textContent=
     new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -22622,7 +22672,6 @@ window.submitCertRequest=function(){
 /* ═══════════════════════════════════
    TOAST
 ═══════════════════════════════════ */
-let _tt=null;
 window.showToast=function(msg,type='info'){
   const C={success:'var(--teal)',error:'var(--rose)',info:'var(--amber)'};
   const I={success:'check-circle',error:'times-circle',info:'info-circle'};
@@ -22666,7 +22715,6 @@ window.selectPay=function(btn,method){
   else if(method==='card') area.innerHTML=`<input type="text" class="sp-input" placeholder="Card Number" style="margin-bottom:7px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><input type="text" class="sp-input" placeholder="MM / YY"><input type="text" class="sp-input" placeholder="CVV"></div>`;
   else area.innerHTML=`<input type="text" class="sp-input" placeholder="Account Number" style="margin-bottom:7px"><input type="text" class="sp-input" placeholder="IFSC Code">`;
 };
-
 </script>
 </body>
 </html>
