@@ -230,9 +230,21 @@
     <!-- Admissions Section -->
     <section id="admissions" class="admissions">
         <div class="container">
+            <!-- Latest Updates strip -->
+            <div class="updates-strip">
+                <div class="updates-label"><i class="fas fa-bell"></i> Latest Updates — March 2026</div>
+                <div class="updates-ticker">
+                    <div class="update-item urgent"><span class="update-tag exam">Board Exam</span> UP Board Class 12 exams ongoing — 24 Feb to 12 Mar 2026. Class 10 exams: 24 Feb to 07 Mar 2026.</div>
+                    <div class="update-item"><span class="update-tag result">Admissions</span> Admissions open for Session 2026–27 (Class 6–11). Last date: 30 April 2026.</div>
+                    <div class="update-item"><span class="update-tag notice">Notice</span> Annual Sports Day — 25 March 2026. All students must participate.</div>
+                    <div class="update-item"><span class="update-tag holiday">Holiday</span> Holi Holiday — 14 March 2026 (observed). School reopens 15 March.</div>
+                    <div class="update-item"><span class="update-tag result">Results</span> UP Board 2025–26 Half Yearly results declared. Check student portal for details.</div>
+                </div>
+            </div>
+
             <div class="admissions-content">
                 <div class="sec-eyebrow"><i class="fas fa-user-plus"></i> Enroll Now</div>
-                <h2>Admissions</h2>
+                <h2>Admissions 2026–27</h2>
                 <p>Join our family and embark on a journey of academic excellence and personal growth.</p>
                 <div class="admission-process">
                     <div class="process-step">
@@ -260,18 +272,33 @@
                     <div class="info-card">
                         <h3>Eligibility</h3>
                         <p>Class 6–11 admissions based on previous academic performance</p>
+                        <ul style="margin-top:0.6rem;padding-left:1rem;font-size:0.85rem;color:var(--text-muted,#888)">
+                            <li>Class 6–8: Passed Class 5–7</li>
+                            <li>Class 9–10: Passed Class 8–9</li>
+                            <li>Class 11: Passed Class 10 (UP Board / CBSE)</li>
+                        </ul>
+                    </div>
+                    <div class="info-card">
+                        <h3>Key Dates — 2026–27</h3>
+                        <ul style="padding-left:1rem;font-size:0.85rem;color:var(--text-muted,#888)">
+                            <li><strong>Form Available:</strong> 1 March 2026</li>
+                            <li><strong>Last Date:</strong> 30 April 2026</li>
+                            <li><strong>Entrance Test:</strong> 10 May 2026</li>
+                            <li><strong>Session Starts:</strong> 1 July 2026</li>
+                        </ul>
                     </div>
                     <div class="info-card">
                         <h3>Documents Required</h3>
                         <ul>
                             <li>Birth Certificate</li>
                             <li>Previous School TC</li>
-                            <li>Mark Sheets</li>
-                            <li>Aadhaar Card</li>
+                            <li>Mark Sheets (last 2 years)</li>
+                            <li>Aadhaar Card (student + parent)</li>
+                            <li>2 Passport-size Photos</li>
                         </ul>
                     </div>
                 </div>
-                <button class="btn-primary" onclick="downloadAdmissionForm()" style="border:none;cursor:pointer;font-size:1rem;font-family:inherit"><i class="fas fa-download"></i> Download Admission Form</button>
+                <button class="btn-primary" onclick="downloadAdmissionForm()" style="border:none;cursor:pointer;font-size:1rem;font-family:inherit"><i class="fas fa-download"></i> Download Admission Form 2026–27</button>
             </div>
         </div>
     </section>
@@ -872,7 +899,7 @@
         <h2>Affiliated to UP Board (Uttar Pradesh Madhyamik Shiksha Parishad)</h2>
       </div>
     </div>
-    <div class="form-title">Admission Form — Academic Year 2025–26</div>
+    <div class="form-title">Admission Form — Academic Year 2026–27</div>
   </div>
 
   <!-- Photo -->
@@ -1050,7 +1077,7 @@
     </div>
     <div class="field w-quarter">
       <label>Academic Year</label>
-      <input type="text" class="line" value="2025–26" readonly>
+      <input type="text" class="line" value="2026–27" readonly>
     </div>
   </div>
 
@@ -1243,7 +1270,7 @@
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href = url;
-        a.download = 'RKPH_Admission_Form_2025-26.html';
+        a.download = 'RKPH_Admission_Form_2026-27.html';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -1384,8 +1384,11 @@ window.printMarksheet=function(){if(!_currentResult){showToast('Search a result 
 ═══════════════════════════════════ */
 let curTTCls=11;
 function initTimetable(){
-  document.getElementById('todayDateStr').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('todayDateStr').textContent=
+    new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   renderWeeklyTT(); renderExamTT(); renderTodaySlots();
+  // Auto-refresh today's highlight every minute
+  setInterval(renderTodaySlots, 60000);
 }
 window.switchTT=function(btn,tab){
   document.querySelectorAll('.tt-tab').forEach(b=>b.classList.remove('active'));
@@ -1400,40 +1403,113 @@ window.changeTTClass=function(v){
   const hdr=document.querySelector('.tt-today-header h4');
   if(hdr) hdr.innerHTML=`<i class="fas fa-sun"></i> Today's Schedule <small style="font-weight:400;opacity:.6;font-size:.78em">— ${tt.label}</small>`;
 };
+
+/* ─── Parse period time to minutes since midnight ─── */
+function parsePeriodMinutes(p){
+  if(!p||p==='BREAK'||p==='LUNCH') return null;
+  const m=p.match(/(\d+):(\d+)/);
+  if(!m) return null;
+  return parseInt(m[1])*60+parseInt(m[2]);
+}
+function getCurrentPeriodIdx(){
+  const now=new Date();
+  const nowMin=now.getHours()*60+now.getMinutes();
+  for(let i=0;i<PERIODS.length;i++){
+    const p=PERIODS[i];
+    if(p==='BREAK'||p==='LUNCH') continue;
+    const parts=p.split('–');
+    if(parts.length<2) continue;
+    const start=parsePeriodMinutes(parts[0]);
+    const end=parsePeriodMinutes(parts[1]);
+    if(start!==null&&end!==null&&nowMin>=start&&nowMin<=end) return i;
+  }
+  return -1;
+}
+function getNextPeriodIdx(){
+  const now=new Date();
+  const nowMin=now.getHours()*60+now.getMinutes();
+  for(let i=0;i<PERIODS.length;i++){
+    const p=PERIODS[i];
+    if(p==='BREAK'||p==='LUNCH') continue;
+    const start=parsePeriodMinutes(p.split('–')[0]);
+    if(start!==null&&nowMin<start) return i;
+  }
+  return -1;
+}
+
 function renderWeeklyTT(){
   const tt=TT_DATA[curTTCls]||TT_DATA[11];
   const days=Object.keys(tt.days);
-  let html=`<thead><tr><th style="text-align:left;min-width:105px">Time</th>${days.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>`;
+  const today=new Date().toLocaleDateString('en-IN',{weekday:'long'});
+  const curIdx=getCurrentPeriodIdx();
+  let html=`<thead><tr><th style="text-align:left;min-width:105px">Time</th>${days.map(d=>`<th class="${d===today?'tt-today-col':''}">${d}${d===today?' <span style="font-size:.6rem;color:var(--teal);font-weight:400">Today</span>':''}</th>`).join('')}</tr></thead><tbody>`;
   PERIODS.forEach((p,i)=>{
-    if(p==='BREAK'||p==='LUNCH'){html+=`<tr><td colspan="${days.length+1}" class="tt-break-td">— ${p} —</td></tr>`;}
-    else{html+=`<tr><td class="tt-period-td">${p}</td>`;days.forEach(d=>{const s=tt.days[d][i];html+=`<td style="background:${sc(s)}">${s||'—'}</td>`;});html+=`</tr>`;}
+    if(p==='BREAK'||p==='LUNCH'){
+      html+=`<tr><td colspan="${days.length+1}" class="tt-break-td">— ${p} —</td></tr>`;
+    } else {
+      const isCurrent=(i===curIdx);
+      html+=`<tr class="${isCurrent?'tt-current-row':''}"><td class="tt-period-td${isCurrent?' tt-active-period':''}">${p}${isCurrent?' <span class="tt-now-badge">NOW</span>':''}</td>`;
+      days.forEach(d=>{
+        const s=tt.days[d][i];
+        const isToday=d===today;
+        html+=`<td style="background:${sc(s)};${isCurrent&&isToday?'font-weight:700;border:1.5px solid rgba(79,195,195,.5)':''}">${s||'—'}</td>`;
+      });
+      html+=`</tr>`;
+    }
   });
   document.getElementById('weeklyTable').innerHTML=html+'</tbody>';
 }
 function renderExamTT(){
   const tt=TT_DATA[curTTCls]||TT_DATA[11];
-  let html=`<thead><tr><th>Date</th><th>Day</th><th>Subject</th><th>Time</th><th>Venue</th></tr></thead><tbody>`;
-  tt.exam.forEach(e=>{html+=`<tr><td><strong>${e.date}</strong></td><td>${e.day}</td><td style="background:${sc(e.sub)};font-weight:600">${e.sub}</td><td>${e.time}</td><td>${e.venue}</td></tr>`;});
+  const today=new Date();
+  let html=`<thead><tr><th>Date</th><th>Day</th><th>Subject</th><th>Time</th><th>Venue</th><th>Status</th></tr></thead><tbody>`;
+  if(!tt.exam||!tt.exam.length){
+    html+=`<tr><td colspan="6" style="text-align:center;opacity:.5;padding:1.5rem">No exam schedule available for ${tt.label}</td></tr>`;
+  } else {
+    tt.exam.forEach(e=>{
+      // Parse date to check if past/today/upcoming
+      const parts=e.date.split(' ');
+      const months={'Jan':0,'Feb':1,'Mar':2,'Apr':3,'May':4,'Jun':5,'Jul':6,'Aug':7,'Sep':8,'Oct':9,'Nov':10,'Dec':11,'January':0,'February':1,'March':2,'April':3,'May':4,'June':5,'July':6,'August':7,'September':8,'October':9,'November':10,'December':11};
+      const eDate=parts.length>=3?new Date(parseInt(parts[2]),months[parts[1]]||0,parseInt(parts[0])):null;
+      const isPast=eDate&&eDate<today&&eDate.toDateString()!==today.toDateString();
+      const isToday=eDate&&eDate.toDateString()===today.toDateString();
+      const statusBadge=isToday?`<span style="color:var(--teal);font-weight:700">Today</span>`:isPast?`<span style="opacity:.45">Done</span>`:`<span style="color:var(--amber)">Upcoming</span>`;
+      html+=`<tr style="${isPast?'opacity:.5':''}${isToday?';background:rgba(79,195,195,.07)':''}"><td><strong>${e.date}</strong></td><td>${e.day}</td><td style="background:${sc(e.sub)};font-weight:600">${e.sub}</td><td>${e.time}</td><td>${e.venue}</td><td>${statusBadge}</td></tr>`;
+    });
+  }
   document.getElementById('examTable').innerHTML=html+'</tbody>';
 }
 function renderTodaySlots(){
   const tt=TT_DATA[curTTCls]||TT_DATA[11];
   const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const today=DAYS[new Date().getDay()];
-  const sched=tt.days[today]||tt.days['Monday'];
+  const todayName=DAYS[new Date().getDay()];
+  const sched=tt.days[todayName]||null;
+  const curIdx=getCurrentPeriodIdx();
+  const nextIdx=getNextPeriodIdx();
   let html='';
-  sched.forEach((sub,i)=>{
-    if(!sub)return;
-    const p=PERIODS[i];
-    if(!p||p==='BREAK'||p==='LUNCH')return;
-    const teacher=tt.teachers?.[sub]||'';
-    html+=`<div class="tt-slot" style="border-left:3px solid ${sub==='Free Period'?'rgba(255,255,255,.15)':'var(--teal)'}">
-      <span class="tt-slot-time">${p}</span>
-      <span class="tt-slot-sub" style="background:${sc(sub)}">${sub}</span>
-      ${teacher?`<span class="tt-slot-teacher">${teacher}</span>`:''}
-    </div>`;
-  });
-  document.getElementById('todaySchedule').innerHTML=html||'<p style="opacity:.45;font-size:.87rem;padding:.5rem 0">No classes today — enjoy your day!</p>';
+  if(!sched){
+    html='<p style="opacity:.45;font-size:.87rem;padding:.5rem 0">No timetable data for today.</p>';
+  } else {
+    let hasSlots=false;
+    sched.forEach((sub,i)=>{
+      if(!sub)return;
+      const p=PERIODS[i];
+      if(!p||p==='BREAK'||p==='LUNCH')return;
+      hasSlots=true;
+      const isCurrent=(i===curIdx);
+      const isNext=(i===nextIdx&&curIdx===-1||i===nextIdx&&i>curIdx);
+      const teacher=tt.teachers?.[sub]||'';
+      html+=`<div class="tt-slot${isCurrent?' tt-slot-active':isNext?' tt-slot-next':''}" style="border-left:3px solid ${isCurrent?'var(--teal)':isNext?'var(--amber)':sub==='Free Period'?'rgba(255,255,255,.15)':'rgba(79,195,195,.3)'}">
+        <span class="tt-slot-time">${p}</span>
+        <span class="tt-slot-sub" style="background:${sc(sub)}">${sub}</span>
+        ${teacher?`<span class="tt-slot-teacher">${teacher}</span>`:''}
+        ${isCurrent?'<span class="tt-slot-badge" style="color:var(--teal);font-size:.65rem;font-weight:700;margin-left:auto">▶ NOW</span>':''}
+        ${isNext?'<span class="tt-slot-badge" style="color:var(--amber);font-size:.65rem;font-weight:700;margin-left:auto">NEXT</span>':''}
+      </div>`;
+    });
+    if(!hasSlots) html='<p style="opacity:.45;font-size:.87rem;padding:.5rem 0">No classes today — enjoy your day!</p>';
+  }
+  document.getElementById('todaySchedule').innerHTML=html;
 }
 window.downloadTimetable=function(){
   const cls=parseInt(document.getElementById('ttClassSelect').value||'11');
@@ -1444,7 +1520,7 @@ window.downloadTimetable=function(){
     if(p==='BREAK'||p==='LUNCH'){rows+=`<tr><td colspan="${days.length+1}" style="text-align:center;background:#f0f0f0;color:#888;font-size:12px;padding:5px">${p}</td></tr>`;}
     else{rows+=`<tr><td style="font-size:12px;color:#666;white-space:nowrap">${p}</td>`;days.forEach(d=>{const s=tt.days[d][i];rows+=`<td style="text-align:center;font-weight:${s?'600':'400'}">${s||'—'}</td>`;});rows+='</tr>';}
   });
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Timetable – ${tt.label}</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:30px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:20px}.hdr h1{margin:0 0 4px;font-size:20px}.hdr p{margin:0;color:#555;font-size:14px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:center}td{padding:8px 10px;border:1px solid #ddd}.footer{margin-top:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Weekly Timetable — ${tt.label} | Academic Year 2024–25</p></div><table><thead><tr><th>Period / Time</th>${days.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table><div class="footer">Downloaded on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})} · RKPH Inter College</div></body></html>`;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Timetable – ${tt.label}</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:30px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:20px}.hdr h1{margin:0 0 4px;font-size:20px}.hdr p{margin:0;color:#555;font-size:14px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:center}td{padding:8px 10px;border:1px solid #ddd}.footer{margin-top:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Weekly Timetable — ${tt.label} | Academic Year 2025–26</p></div><table><thead><tr><th>Period / Time</th>${days.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table><div class="footer">Downloaded on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})} · RKPH Inter College</div></body></html>`;
   triggerDownload(`Timetable_Class${cls}.html`,html);
   showToast('Timetable downloaded!','success');
 };
@@ -1468,6 +1544,29 @@ function numberToWords(n){
   if(n>=1000)return h(Math.floor(n/1000))+' thousand'+(n%1000?' '+h(n%1000):'');
   return h(n);
 }
+/* ─── Fee due-date helpers ─── */
+function feeDaysLeft(dueDateStr){
+  if(!dueDateStr||dueDateStr==='—') return null;
+  // Parse "05 Apr 2026" or "05 Apr 2025" format
+  const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11,
+    January:0,February:1,March:2,April:3,May:4,June:5,July:6,August:7,September:8,October:9,November:10,December:11};
+  const parts=dueDateStr.trim().split(/\s+/);
+  if(parts.length<3) return null;
+  const d=parseInt(parts[0]), m=months[parts[1]], y=parseInt(parts[2]);
+  if(isNaN(d)||m===undefined||isNaN(y)) return null;
+  const due=new Date(y,m,d);
+  const today=new Date(); today.setHours(0,0,0,0);
+  return Math.round((due-today)/(1000*60*60*24));
+}
+function dueDateBadge(daysLeft, status){
+  if(status==='paid'||status==='upcoming') return '';
+  if(daysLeft===null) return '';
+  if(daysLeft<0) return `<span style="color:var(--rose);font-size:.68rem;font-weight:600;display:block">Overdue ${Math.abs(daysLeft)}d</span>`;
+  if(daysLeft===0) return `<span style="color:var(--rose);font-size:.68rem;font-weight:700;display:block">Due Today!</span>`;
+  if(daysLeft<=7) return `<span style="color:var(--amber);font-size:.68rem;font-weight:600;display:block">${daysLeft}d left</span>`;
+  return `<span style="opacity:.45;font-size:.68rem;display:block">${daysLeft}d left</span>`;
+}
+
 function renderFeeTable(filter='all'){
   const tbody=document.getElementById('feeTableBody');
   if(!tbody)return;
@@ -1476,18 +1575,21 @@ function renderFeeTable(filter='all'){
   const rows=filter==='all'?studentFees:studentFees.filter(f=>f.status===filter);
   tbody.innerHTML=rows.map(f=>{
     const rNo=f.status==='paid'?genReceiptNo(roll,f.q,f.type,f.amt):'—';
+    const days=feeDaysLeft(f.due);
+    const isOverdue=f.status==='pending'&&days!==null&&days<0;
     const stBadge=f.status==='paid'
       ?`<span class="fee-status-paid"><i class="fas fa-check-circle"></i> Paid</span>`
       :f.status==='pending'
-      ?`<span class="fee-status-pending"><i class="fas fa-exclamation-circle"></i> Pending</span>`
+      ?`<span class="fee-status-pending${isOverdue?' fee-overdue':''}"><i class="fas fa-exclamation-circle"></i> ${isOverdue?'Overdue':'Pending'}</span>`
       :`<span class="fee-status-upcoming"><i class="fas fa-clock"></i> Upcoming</span>`;
     const rCell=f.status==='paid'?`<span class="fee-receipt-no">${rNo}</span>`:`<span style="opacity:.3">—</span>`;
+    const dueTd=`<td>${f.due}${f.status!=='paid'?dueDateBadge(days,f.status):''}</td>`;
     const act=f.status==='paid'
       ?`<button class="sp-btn-outline" style="padding:5px 11px;font-size:.74rem" onclick="downloadReceiptFor('${f.q}','${f.type}',${f.amt},'${f.paid}','${rNo}')"><i class="fas fa-receipt"></i> Receipt</button>`
       :f.status==='pending'
-      ?`<button class="sp-btn-primary" style="padding:5px 13px;font-size:.74rem" onclick="showToast('Payment gateway required for live use.','info')"><i class="fas fa-rupee-sign"></i> Pay</button>`
+      ?`<button class="sp-btn-primary${isOverdue?' btn-urgent':''}" style="padding:5px 13px;font-size:.74rem" onclick="showToast('Payment gateway required for live use.','info')"><i class="fas fa-rupee-sign"></i> Pay${isOverdue?' Now':''}</button>`
       :`<span style="opacity:.3">—</span>`;
-    return `<tr class="row-${f.status}"><td>${f.q}</td><td>${f.type}</td><td>₹${f.amt.toLocaleString('en-IN')}</td><td>${f.due}</td><td>${f.paid}</td><td>${rCell}</td><td>${stBadge}</td><td>${act}</td></tr>`;
+    return `<tr class="row-${f.status}${isOverdue?' row-overdue':''}"><td>${f.q}</td><td>${f.type}</td><td>₹${f.amt.toLocaleString('en-IN')}</td>${dueTd}<td>${f.paid}</td><td>${rCell}</td><td>${stBadge}</td><td>${act}</td></tr>`;
   }).join('');
   updateFeeStats(roll);
 }
@@ -1545,7 +1647,7 @@ window.downloadFeeStatement=function(){
   const rows=studentFees.map(f=>`<tr><td>${f.q}</td><td>${f.type}</td><td>₹${f.amt.toLocaleString('en-IN')}</td><td>${f.due}</td><td>${f.paid}</td><td style="font-weight:600;color:${f.status==='paid'?'#1a9e6b':f.status==='pending'?'#c0392b':'#e67e22'}">${f.status.toUpperCase()}</td></tr>`).join('');
   const totalPaid=studentFees.filter(f=>f.status==='paid').reduce((s,f)=>s+f.amt,0);
   const totalPending=studentFees.filter(f=>f.status==='pending').reduce((s,f)=>s+f.amt,0);
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fee Statement – ${st.name}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #333;padding-bottom:14px;margin-bottom:22px}.hdr h1{font-size:20px;margin:0 0 4px}.info{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9f9f9;padding:12px;border-radius:6px;margin-bottom:20px}.info div{font-size:13px}.info strong{min-width:110px;display:inline-block}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#1a1a2e;color:#fff;padding:9px 11px;text-align:left}td{padding:8px 11px;border-bottom:1px solid #eee}.summary{display:flex;gap:20px;margin-top:18px}.sum-card{flex:1;padding:12px;border-radius:6px;text-align:center}.sum-card span{display:block;font-size:11px;color:#666;text-transform:uppercase;margin-bottom:4px}.sum-card strong{font-size:18px}.paid-card{background:#e8faf3;border:1px solid #1a9e6b}.paid-card strong{color:#1a9e6b}.pend-card{background:#fde8e8;border:1px solid #c0392b}.pend-card strong{color:#c0392b}.footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head><body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Fee Statement — Academic Year 2024–25</p></div><div class="info"><div><strong>Student Name:</strong> ${st.name}</div><div><strong>Roll Number:</strong> ${st.roll}</div><div><strong>Class:</strong> ${st.class} – ${st.stream}</div><div><strong>Generated On:</strong> ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})}</div></div><table><thead><tr><th>Quarter</th><th>Fee Type</th><th>Amount</th><th>Due Date</th><th>Paid On</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><div class="summary"><div class="sum-card paid-card"><span>Total Paid</span><strong>₹${totalPaid.toLocaleString('en-IN')}</strong></div><div class="sum-card pend-card"><span>Pending Dues</span><strong>₹${totalPending.toLocaleString('en-IN')}</strong></div></div><div class="footer">Ram Krishna Paramhans Inter College · Nagal, Saharanpur</div></body></html>`;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fee Statement – ${st.name}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #333;padding-bottom:14px;margin-bottom:22px}.hdr h1{font-size:20px;margin:0 0 4px}.info{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9f9f9;padding:12px;border-radius:6px;margin-bottom:20px}.info div{font-size:13px}.info strong{min-width:110px;display:inline-block}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#1a1a2e;color:#fff;padding:9px 11px;text-align:left}td{padding:8px 11px;border-bottom:1px solid #eee}.summary{display:flex;gap:20px;margin-top:18px}.sum-card{flex:1;padding:12px;border-radius:6px;text-align:center}.sum-card span{display:block;font-size:11px;color:#666;text-transform:uppercase;margin-bottom:4px}.sum-card strong{font-size:18px}.paid-card{background:#e8faf3;border:1px solid #1a9e6b}.paid-card strong{color:#1a9e6b}.pend-card{background:#fde8e8;border:1px solid #c0392b}.pend-card strong{color:#c0392b}.footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head><body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Fee Statement — Academic Year 2025–26</p></div><div class="info"><div><strong>Student Name:</strong> ${st.name}</div><div><strong>Roll Number:</strong> ${st.roll}</div><div><strong>Class:</strong> ${st.class} – ${st.stream}</div><div><strong>Generated On:</strong> ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})}</div></div><table><thead><tr><th>Quarter</th><th>Fee Type</th><th>Amount</th><th>Due Date</th><th>Paid On</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><div class="summary"><div class="sum-card paid-card"><span>Total Paid</span><strong>₹${totalPaid.toLocaleString('en-IN')}</strong></div><div class="sum-card pend-card"><span>Pending Dues</span><strong>₹${totalPending.toLocaleString('en-IN')}</strong></div></div><div class="footer">Ram Krishna Paramhans Inter College · Nagal, Saharanpur</div></body></html>`;
   triggerDownload(`Fee_Statement_${st.roll}.html`,html);
   showToast('Fee statement downloaded!','success');
 };
@@ -1662,26 +1764,68 @@ function renderSubjBars(){
   const el=document.getElementById('subjAttendList');
   if(!el)return;
   const working=present+absent+late;
-  el.innerHTML=working===0
-    ?'<p style="opacity:.45;font-size:.85rem">No attendance records yet.</p>'
-    :[['Present',present,'var(--teal)'],['Absent',absent,'var(--rose)'],['Late',late,'var(--amber)']].map(([lbl,val,col])=>{
-        const p=working>0?Math.round(val/working*100):0;
-        return `<div class="subj-row"><div class="subj-name">${lbl}</div><div class="subj-bar-bg"><div class="subj-bar" style="width:${p}%;background:${col}"></div></div><div class="subj-pct" style="color:${col}">${p}%</div><div class="subj-days">${val}d</div></div>`;
-      }).join('');
-  // Update stat elements
+
+  if(working===0){
+    el.innerHTML='<p style="opacity:.45;font-size:.85rem">No attendance records yet. Records appear once the admin marks daily attendance.</p>';
+  } else {
+    el.innerHTML=[['Present',present,'var(--teal)'],['Absent',absent,'var(--rose)'],['Late / Half-day',late,'var(--amber)']].map(([lbl,val,col])=>{
+      const p=working>0?Math.round(val/working*100):0;
+      return `<div class="subj-row"><div class="subj-name">${lbl}</div><div class="subj-bar-bg"><div class="subj-bar" style="width:${p}%;background:${col}"></div></div><div class="subj-pct" style="color:${col}">${p}%</div><div class="subj-days">${val}d</div></div>`;
+    }).join('');
+  }
+
+  // Stat elements
   const ge=id=>document.getElementById(id);
   if(ge('attOverallPct')) ge('attOverallPct').textContent=overall+'%';
   if(ge('attPresent'))    ge('attPresent').textContent=present;
   if(ge('attAbsent'))     ge('attAbsent').textContent=absent;
   if(ge('attLate'))       ge('attLate').textContent=late;
   if(ge('attWorkingDays')) ge('attWorkingDays').textContent=workingDays;
+
+  // Donut
   const circle=document.querySelector('.att-donut circle:nth-child(2)');
-  if(circle){ const r=42,circ=2*Math.PI*r; circle.setAttribute('stroke-dashoffset',(circ*(1-overall/100)).toFixed(1)); circle.setAttribute('stroke',overall>=75?'var(--teal)':overall>=50?'var(--amber)':'var(--rose)'); }
-  const minNote=document.querySelector('.att-min-note');
+  if(circle){
+    const r=42,circ=2*Math.PI*r;
+    circle.setAttribute('stroke-dashoffset',(circ*(1-overall/100)).toFixed(1));
+    circle.setAttribute('stroke',overall>=75?'var(--teal)':overall>=50?'var(--amber)':'var(--rose)');
+  }
+  const minNote=ge('attMinNote')||document.querySelector('.att-min-note');
   if(minNote) minNote.style.color=overall<75?'var(--rose)':'var(--muted)';
-  // Warning banner
+
+  // Warning banner with days-needed calculator
   const banner=ge('attWarningBanner');
-  if(banner){ banner.style.display=(overall<75&&working>0)?'flex':'none'; }
+  const warnText=ge('attWarningText');
+  if(banner&&working>0){
+    if(overall<75){
+      banner.style.display='flex';
+      // How many consecutive present days to reach 75%?
+      let needed=0;
+      let sim=present+late*0.5;
+      let simTotal=working;
+      while(simTotal<500&&(simTotal===0||sim/simTotal<0.75)){ sim++; simTotal++; needed++; }
+      if(warnText) warnText.textContent=`⚠ Attendance ${overall}% — below 75% minimum. You need to attend ${needed} more consecutive day${needed!==1?'s':''} to meet the requirement.`;
+    } else {
+      banner.style.display='none';
+    }
+  }
+
+  // Days-can-miss calculator (shown when above 75%)
+  const safeCard=ge('attSafeCard');
+  if(safeCard&&working>0){
+    if(overall>=75){
+      // How many days can be missed while staying ≥75%?
+      let canMiss=0;
+      let sim=present+late*0.5;
+      let simTotal=working;
+      while(simTotal<500&&simTotal>0&&(sim/(simTotal+1))>=0.75){ simTotal++; canMiss++; }
+      safeCard.style.display='flex';
+      safeCard.innerHTML=`<i class="fas fa-shield-alt"></i> You can miss up to <strong style="margin:0 4px">${canMiss} more day${canMiss!==1?'s':''}</strong> and still maintain 75% attendance.`;
+      safeCard.className='att-needed-card safe';
+    } else {
+      safeCard.style.display='none';
+    }
+  }
+
   // Month history
   if(typeof renderMonthHistory==='function') renderMonthHistory(roll);
 }
@@ -1696,30 +1840,68 @@ function renderMonthHistory(roll){
     const mp=Object.values(mdata).filter(v=>v==='present').length;
     const ma=Object.values(mdata).filter(v=>v==='absent').length;
     const ml=Object.values(mdata).filter(v=>v==='late').length;
+    const mh=Object.values(mdata).filter(v=>v==='holiday').length;
     const mt=mp+ma+ml;
     const pct=mt>0?Math.round((mp+ml*0.5)/mt*100):0;
     const col=pct>=75?'var(--teal)':pct>=50?'var(--amber)':'var(--rose)';
-    return `<div class="att-mh-row"><span class="att-mh-month">${MN[mo]||mo} ${yr}</span><div class="att-mh-bar-track"><div class="att-mh-bar-fill" style="width:${pct}%;background:${col}"></div></div><span class="att-mh-pct" style="color:${col}">${mt>0?pct+'%':'—'}</span></div>`;
+    const monthLabel=`${MN[mo]||mo} ${yr}`;
+    return `<div class="att-mh-row" title="${mp} present · ${ma} absent · ${ml} late · ${mh} holiday">
+      <span class="att-mh-month">${monthLabel}</span>
+      <div class="att-mh-bar-track"><div class="att-mh-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <span class="att-mh-pct" style="color:${col}">${mt>0?pct+'%':'—'}</span>
+    </div>`;
   });
   el.innerHTML=rows.length?rows.join(''):'<p style="opacity:.4;font-size:.8rem">No monthly data yet.</p>';
 }
+
 window.downloadAttendance=function(){
   if(!AUTH.loggedIn){showToast('Please log in first','error');return}
   const st=AUTH.student;
-  const {present, absent, late, total, overall} = getStudentAttendanceSummary(st.roll);
-  if(total===0){showToast('No attendance data available','info');return}
+  const {present,absent,late,workingDays,overall}=getAttSummary(st.roll);
+  if(workingDays===0){showToast('No attendance data available','info');return}
+  const rollData=ATTENDANCE[st.roll]||{};
+  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthRows=Object.entries(rollData).sort(([a],[b])=>a.localeCompare(b)).map(([mk,mdata])=>{
+    const [yr,moStr]=mk.split('-'); const mo=parseInt(moStr);
+    const mp=Object.values(mdata).filter(v=>v==='present').length;
+    const ma=Object.values(mdata).filter(v=>v==='absent').length;
+    const ml=Object.values(mdata).filter(v=>v==='late').length;
+    const mh=Object.values(mdata).filter(v=>v==='holiday').length;
+    const mt=mp+ma+ml;
+    const pct=mt>0?Math.round((mp+ml*0.5)/mt*100):0;
+    const col=pct>=75?'#1a9e6b':pct>=50?'#e67e22':'#c0392b';
+    return `<tr><td>${MN[mo]||mo} ${yr}</td><td style="text-align:center">${mp}</td><td style="text-align:center;color:#c0392b">${ma}</td><td style="text-align:center;color:#e67e22">${ml}</td><td style="text-align:center;color:#888">${mh}</td><td style="text-align:center">${mt}</td><td style="text-align:center;font-weight:700;color:${col}">${mt>0?pct+'%':'—'}</td></tr>`;
+  }).join('');
+  const printDate=new Date().toLocaleDateString('en-IN',{dateStyle:'long'});
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Attendance – ${st.name}</title>
-<style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #333;padding-bottom:14px;margin-bottom:22px}.hdr h1{font-size:20px;margin:0 0 4px}.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}.sb{padding:12px;background:#f5f5f5;border-radius:6px;text-align:center}.sb span{display:block;font-size:11px;color:#666;text-transform:uppercase;margin-bottom:4px}.sb strong{font-size:20px;font-weight:700}.footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head>
-<body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Attendance Report — ${st.name} · Roll: ${st.roll} · ${st.class} ${st.stream}</p></div>
-<div class="summary-bar">
+<style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#111}
+.hdr{text-align:center;border-bottom:2px solid #1a1a2e;padding-bottom:14px;margin-bottom:22px}
+.hdr h1{font-size:20px;margin:0 0 4px}.hdr p{margin:0;color:#555;font-size:13px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
+.sb{padding:12px;background:#f5f5f5;border-radius:6px;text-align:center}
+.sb span{display:block;font-size:11px;color:#666;text-transform:uppercase;margin-bottom:4px}
+.sb strong{font-size:22px;font-weight:700}
+.note{background:${overall>=75?'#e8faf3':'#fde8e8'};border:1px solid ${overall>=75?'#1a9e6b':'#c0392b'};border-radius:6px;padding:10px 14px;font-size:13px;color:${overall>=75?'#1a9e6b':'#c0392b'};margin-bottom:20px;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#1a1a2e;color:#fff;padding:9px 12px;text-align:left}
+td{padding:9px 12px;border-bottom:1px solid #eee}
+tr:nth-child(even) td{background:#f8f8f8}
+.footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head>
+<body>
+<div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1>
+<p>Attendance Report · ${st.name} · Roll: ${st.roll} · ${st.class}${st.stream?' – '+st.stream:''} · Session ${st.session||'2025-26'}</p></div>
+<div class="summary">
   <div class="sb"><span>Overall</span><strong style="color:${overall>=75?'#1a9e6b':'#c0392b'}">${overall}%</strong></div>
-  <div class="sb"><span>Present</span><strong>${present}</strong></div>
+  <div class="sb"><span>Present</span><strong style="color:#1a9e6b">${present}</strong></div>
   <div class="sb"><span>Absent</span><strong style="color:#c0392b">${absent}</strong></div>
   <div class="sb"><span>Late</span><strong style="color:#e67e22">${late}</strong></div>
 </div>
-<div class="footer">Generated on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})} · RKPH Inter College Student Portal</div>
+<div class="note">${overall>=75?`✓ Attendance ${overall}% — meets the 75% minimum requirement.`:`⚠ Attendance ${overall}% — below the 75% minimum. Immediate improvement required.`}</div>
+<table><thead><tr><th>Month</th><th style="text-align:center">Present</th><th style="text-align:center">Absent</th><th style="text-align:center">Late</th><th style="text-align:center">Holiday</th><th style="text-align:center">Working Days</th><th style="text-align:center">%</th></tr></thead>
+<tbody>${monthRows||'<tr><td colspan="7" style="text-align:center;opacity:.5">No monthly data available</td></tr>'}</tbody></table>
+<div class="footer">Generated on ${printDate} · Ram Krishna Paramhans Inter College Student Portal</div>
 </body></html>`;
-  triggerDownload(`Attendance_${st.roll}.html`,html);
+  triggerDownload(`Attendance_${st.roll}_${st.session||'2025-26'}.html`,html);
   showToast('Attendance report downloaded!','success');
 };
 

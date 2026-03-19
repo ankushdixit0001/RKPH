@@ -801,3 +801,77 @@ kbd{background:rgba(255,255,255,0.10);padding:2px 6px;border-radius:5px;font-siz
   padding: 2px 6px;
   white-space: nowrap;
 }
+
+/* ══════════════════════════════════════
+   TIMETABLE ENHANCEMENTS
+══════════════════════════════════════ */
+.tt-today-col { background: rgba(79,195,195,0.06) !important; }
+.tt-current-row td { background: rgba(79,195,195,0.05) !important; }
+.tt-active-period {
+  color: var(--teal) !important;
+  font-weight: 700 !important;
+}
+.tt-now-badge {
+  display: inline-block;
+  font-size: 0.58rem;
+  background: var(--teal);
+  color: #0a0e1a;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 800;
+  vertical-align: middle;
+  margin-left: 4px;
+  letter-spacing: 0.04em;
+}
+.tt-slot-active {
+  background: rgba(79,195,195,0.08) !important;
+  border-radius: 8px;
+}
+.tt-slot-next {
+  background: rgba(245,200,66,0.06) !important;
+  border-radius: 8px;
+}
+.tt-slot-badge { flex-shrink: 0; }
+
+/* Exam table status */
+.tt-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+/* ══════════════════════════════════════
+   FEE RECEIPT NUMBER STYLE
+══════════════════════════════════════ */
+.fee-receipt-no {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: var(--teal);
+  background: rgba(79,195,195,0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════
+   ATTENDANCE — DAYS NEEDED CARD
+══════════════════════════════════════ */
+.att-needed-card {
+  background: rgba(245,200,66,0.07);
+  border: 1px solid rgba(245,200,66,0.22);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: var(--amber, #f5c842);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.att-needed-card.safe {
+  background: rgba(79,195,195,0.07);
+  border-color: rgba(79,195,195,0.22);
+  color: var(--teal);
+}
+.att-needed-card i { flex-shrink: 0; }
+
+/* Fee overdue styling */
+.fee-overdue { color: var(--rose) !important; }
+.row-overdue td { background: rgba(232,107,138,0.04) !important; }
+.btn-urgent { background: rgba(232,107,138,0.2) !important; border-color: rgba(232,107,138,0.4) !important; }
