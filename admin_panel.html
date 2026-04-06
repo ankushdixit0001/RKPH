@@ -222,7 +222,15 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
       <div class="f-group"><label>Password</label><input type="password" id="loginPwd" placeholder="••••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
       <div class="login-err" id="loginErr"></div>
       <button class="btn-login" onclick="doAdminLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
-      <div class="login-hint">Username: <strong>admin</strong> &nbsp;|&nbsp; Password: <strong>rkph@admin2025</strong></div>
+      <div class="login-hint">Username: <strong id="lh_user">admin</strong> &nbsp;|&nbsp; Password: <strong id="lh_pass">rkph@admin2025</strong></div>
+      <script>
+        (function(){
+          if(typeof ADMIN_CREDENTIALS!=='undefined'){
+            document.getElementById('lh_user').textContent=ADMIN_CREDENTIALS.username;
+            document.getElementById('lh_pass').textContent=ADMIN_CREDENTIALS.password;
+          }
+        })();
+      </script>
       <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.07);text-align:center">
         <button onclick="if(confirm('Reset to built-in data? This clears any saved changes.')){localStorage.removeItem('rkph_admin_db');location.reload();}"
           style="background:none;border:none;color:rgba(255,255,255,0.28);font-size:0.72rem;cursor:pointer;text-decoration:underline">
@@ -608,7 +616,6 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
           </div>
         </div>
       </div>
-      </div>
 
       <!-- Architecture diagram -->
       <div style="background:rgba(79,195,195,0.05);border:1px solid rgba(79,195,195,0.15);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.4rem">
@@ -633,6 +640,40 @@ table.admin-tbl tbody tr:last-child td{border-bottom:none}
             <div style="color:var(--teal);font-weight:600">Replace 1 file</div>
             <div style="color:var(--muted);font-size:.7rem;margin-top:2px">both portal & admin updated</div>
           </div>
+        </div>
+      </div>
+
+      <!-- ── Change Admin Password ── -->
+      <div class="card" style="margin-bottom:1.4rem;border-color:rgba(245,200,66,0.2)">
+        <div class="card-header"><h3><i class="fas fa-key" style="color:var(--amber)"></i> Change Admin Password</h3></div>
+        <div class="card-body">
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem">
+            Password is stored in <code style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px">rkph_data.js</code>.
+            After changing, click <strong>Download rkph_data.js</strong> below so the new password is saved permanently.
+          </p>
+          <div class="form-grid cols2" style="gap:1rem;margin-bottom:1rem">
+            <div class="f-group">
+              <label>New Username</label>
+              <input class="f-input" id="chg_user" placeholder="admin" value="">
+            </div>
+            <div class="f-group">
+              <label>New Password</label>
+              <div style="position:relative">
+                <input class="f-input" id="chg_pass" type="password" placeholder="New password" style="padding-right:38px">
+                <button onclick="(function(){var i=document.getElementById('chg_pass');i.type=i.type==='password'?'text':'password';})()" type="button"
+                  style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="f-group">
+              <label>Confirm New Password</label>
+              <input class="f-input" id="chg_pass2" type="password" placeholder="Repeat password">
+            </div>
+          </div>
+          <div id="chg_err" style="color:var(--rose);font-size:0.82rem;margin-bottom:0.6rem;display:none"></div>
+          <button class="btn btn-amber" onclick="changeAdminPassword()"><i class="fas fa-save"></i> Update Credentials</button>
+          <span id="chg_ok" style="display:none;margin-left:12px;color:var(--teal);font-size:0.84rem"><i class="fas fa-check-circle"></i> Saved! Download rkph_data.js to make it permanent.</span>
         </div>
       </div>
 
@@ -947,6 +988,11 @@ let DB = {
   attendance: (typeof ATTENDANCE !== 'undefined') ? JSON.parse(JSON.stringify(ATTENDANCE)) : {},
   history:    (typeof HISTORY    !== 'undefined') ? JSON.parse(JSON.stringify(HISTORY))    : {},
 
+  // ── Admin credentials (read from rkph_data.js, changeable here) ──
+  adminCredentials: (typeof ADMIN_CREDENTIALS !== 'undefined')
+    ? JSON.parse(JSON.stringify(ADMIN_CREDENTIALS))
+    : { username: 'admin', password: 'rkph@admin2025' },
+
   // ── Admin-editable (saved in localStorage) ──
     notices: { global:[], class:{}, private:{} },
   currentSession: '2024-25',
@@ -1000,16 +1046,17 @@ function saveDB(){
     // Save only admin-editable data + any added/edited records
     // Base student/result data lives in rkph_data.js
     const payload = {
-      _version:       DB_VERSION,
-      notices:        DB.notices,
-      timetable:      DB.timetable,
-      currentSession: DB.currentSession,
-      students:       DB.students,   // includes edits + new students
-      results:        DB.results,    // includes new results
-      fees:           DB.fees,
-      assigns:        DB.assigns,
-      attendance:     DB.attendance,
-      history:        DB.history||{},
+      _version:           DB_VERSION,
+      notices:            DB.notices,
+      timetable:          DB.timetable,
+      currentSession:     DB.currentSession,
+      students:           DB.students,
+      results:            DB.results,
+      fees:               DB.fees,
+      assigns:            DB.assigns,
+      attendance:         DB.attendance,
+      history:            DB.history||{},
+      adminCredentials:   DB.adminCredentials,
     };
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
   } catch(e){ console.warn('saveDB failed',e); }
@@ -1036,8 +1083,9 @@ function loadDB(){
 
     // Restore admin-edited notices and timetable
     if(saved.notices && (saved.notices.global||saved.notices.class)) DB.notices = saved.notices;
-    if(saved.timetable)     DB.timetable     = saved.timetable;
-    if(saved.currentSession) DB.currentSession= saved.currentSession;
+    if(saved.timetable)          DB.timetable          = saved.timetable;
+    if(saved.currentSession)     DB.currentSession     = saved.currentSession;
+    if(saved.adminCredentials)   DB.adminCredentials   = saved.adminCredentials;
 
     // Merge admin-added/edited students (new ones not in rkph_data.js)
     if(saved.students){
@@ -1067,7 +1115,13 @@ function loadDB(){
 function doAdminLogin(){
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPwd').value.trim();
-  if(u==='admin' && p==='rkph@admin2025'){
+  // Read from localStorage first (allows password to have been changed)
+  let savedCreds = null;
+  try{ const raw=localStorage.getItem('rkph_admin_db'); if(raw){ const s=JSON.parse(raw); if(s.adminCredentials) savedCreds=s.adminCredentials; } }catch(e){}
+  const admCreds = savedCreds || (typeof ADMIN_CREDENTIALS !== 'undefined' ? ADMIN_CREDENTIALS : { username:'admin', password:'rkph@admin2025' });
+  const admUser = admCreds.username || 'admin';
+  const admPass = admCreds.password || 'rkph@admin2025';
+  if(u===admUser && p===admPass){
     loadDB(); // restore saved data before rendering
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('app').style.display='block';
@@ -1084,6 +1138,38 @@ function doLogout(){
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginUser').value='';
   document.getElementById('loginPwd').value='';
+}
+
+function changeAdminPassword(){
+  const u  = document.getElementById('chg_user').value.trim();
+  const p  = document.getElementById('chg_pass').value.trim();
+  const p2 = document.getElementById('chg_pass2').value.trim();
+  const err = document.getElementById('chg_err');
+  const ok  = document.getElementById('chg_ok');
+  err.style.display='none'; ok.style.display='none';
+  if(!u || !p){
+    err.textContent='Username and password cannot be empty.';
+    err.style.display='block'; return;
+  }
+  if(p !== p2){
+    err.textContent='Passwords do not match — please retype.';
+    err.style.display='block'; return;
+  }
+  if(p.length < 6){
+    err.textContent='Password must be at least 6 characters.';
+    err.style.display='block'; return;
+  }
+  DB.adminCredentials = { username: u, password: p };
+  saveDB();
+  // Also update the login hint live
+  const lhu = document.getElementById('lh_user');
+  const lhp = document.getElementById('lh_pass');
+  if(lhu) lhu.textContent = u;
+  if(lhp) lhp.textContent = p;
+  ok.style.display='inline';
+  document.getElementById('chg_pass').value='';
+  document.getElementById('chg_pass2').value='';
+  toast('Credentials updated! Download rkph_data.js below to make it permanent.','success');
 }
 
 /* ══════════════════════════════════════
@@ -1167,6 +1253,9 @@ function initAll(){
   updateStreamOptions();
   // Set session picker to currentSession
   refreshSessionStats();
+  // Pre-fill change-password form with current username
+  const cu = document.getElementById('chg_user');
+  if(cu) cu.value = DB.adminCredentials?.username || 'admin';
 }
 
 /* Helper: build student options filtered by class */
@@ -2160,6 +2249,9 @@ const RKPH_DATA_VERSION = ${(typeof RKPH_DATA_VERSION !== 'undefined' ? RKPH_DAT
 const RKPH_GENERATED    = '${now}';
 const RKPH_SESSION      = '${DB.currentSession || '2025-26'}';
 
+/* ─── Admin Credentials (single source of truth) ─── */
+const ADMIN_CREDENTIALS = ` + JSON.stringify(DB.adminCredentials || {username:'admin',password:'rkph@admin2025'}) + `;
+
 /* ─── Students ─── */
 const STUDENTS = ` + JSON.stringify(s, null, 2) + `;
 
@@ -2209,19 +2301,32 @@ function exportJS(){ exportDataFile(); }
 
 function exportAdminHTML(){
   saveDB();
-  const html = document.documentElement.outerHTML;
+  let html = document.documentElement.outerHTML;
+  // Strip Cloudflare auto-injected scripts (email-decode, rocket-loader, etc.)
+  html = html.replace(/<script[^>]+src="\/cdn-cgi\/[^"]*"[^>]*><\/script>/g, '');
+  // Strip Cloudflare email obfuscation wrappers — restore plain email text
+  html = html.replace(/<a[^>]*class="[^"]*__cf_email__[^"]*"[^>]*data-cfemail="([^"]*)"[^>]*>.*?<\/a>/g,
+    (_, hex) => {
+      try {
+        let e='', r=parseInt(hex.substr(0,2),16);
+        for(let i=2;i<hex.length;i+=2) e+=String.fromCharCode(parseInt(hex.substr(i,2),16)^r);
+        return e;
+      } catch(ex){ return '(email)'; }
+    });
+  // Update the login hint to reflect current credentials
+  html = html.replace(/<strong id="lh_user">[^<]*<\/strong>/, '<strong id="lh_user">'+(DB.adminCredentials?.username||'admin')+'</strong>');
+  html = html.replace(/<strong id="lh_pass">[^<]*<\/strong>/, '<strong id="lh_pass">'+(DB.adminCredentials?.password||'rkph@admin2025')+'</strong>');
   triggerDownloadText('admin_panel.html', '<!DOCTYPE html>\n' + html);
   toast('admin_panel.html downloaded! Replace old file to keep all changes.', 'success');
 }
 
 function triggerDownloadText(filename, content){
-  const blob = new Blob([content], {type:'text/plain'});
+  const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href=url; a.download=filename;
+  a.href=url; a.download=filename; a.style.display='none';
   document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
 }
 
 /* ══════════════════════════════════════
@@ -2252,12 +2357,12 @@ function downloadCSVTemplate(){
     'RKPH2025004,Sunita Devi,rkph126,Class 5,General,A,2024-25,05 Jan 2015,,,Muradabad UP,Rampal,',
   ].join('\n');
   const csv = header + '\n' + sample;
-  const blob = new Blob([csv], {type:'text/csv'});
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href=url; a.download='RKPH_Student_Import_Template.csv';
+  a.href=url; a.download='RKPH_Student_Import_Template.csv'; a.style.display='none';
   document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
   toast('Template downloaded! Fill it in Excel/Sheets, then upload.','success');
 }
 
@@ -3364,12 +3469,12 @@ function injectShakeCSS(){
   document.head.appendChild(s);
 }
 function triggerDownload(name,content){
-  const blob=new Blob([content],{type:'text/html'});
+  const blob=new Blob([content],{type:'text/html;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download=name;
+  a.href=url; a.download=name; a.style.display='none';
   document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },300);
 }
 window.selectPay=function(btn,method){
   document.querySelectorAll('.pmt').forEach(b=>b.classList.remove('active'));

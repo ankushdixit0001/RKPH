@@ -372,7 +372,7 @@ function renderTodaySlots(){
       hasSlots=true;
       const isCurrent=(i===curIdx);
       const isNext=(i===nextIdx&&curIdx===-1||i===nextIdx&&i>curIdx);
-      const teacher=tt.teachers?.[sub]||'';
+      const teacher=(tt.teachers && tt.teachers[sub])||'';
       html+=`<div class="tt-slot${isCurrent?' tt-slot-active':isNext?' tt-slot-next':''}" style="border-left:3px solid ${isCurrent?'var(--teal)':isNext?'var(--amber)':sub==='Free Period'?'rgba(255,255,255,.15)':'rgba(79,195,195,.3)'}">
         <span class="tt-slot-time">${p}</span>
         <span class="tt-slot-sub" style="background:${sc(sub)}">${sub}</span>
@@ -444,7 +444,7 @@ function dueDateBadge(daysLeft, status){
 function renderFeeTable(filter='all'){
   const tbody=document.getElementById('feeTableBody');
   if(!tbody)return;
-  const roll=AUTH.student?.roll||'';
+  const roll=(AUTH.student && AUTH.student.roll)||'';
   const studentFees=FEES[roll]||[];
   const rows=filter==='all'?studentFees:studentFees.filter(f=>f.status===filter);
   tbody.innerHTML=rows.map(f=>{
@@ -479,8 +479,8 @@ function updateFeeStats(roll){
   if(el('feeStatPaid'))    el('feeStatPaid').textContent    ='₹'+totalPaid.toLocaleString('en-IN');
   if(el('feeStatPending')) el('feeStatPending').textContent =totalPend>0?'₹'+totalPend.toLocaleString('en-IN'):'₹0';
   if(el('feeStatDue'))     el('feeStatDue').textContent     =nextDue?nextDue.due:'—';
-  if(el('feeStatSession')) el('feeStatSession').textContent =st?.session||'2024-25';
-  if(el('feeScheduleLabel')) el('feeScheduleLabel').textContent=(st?.session||'2024-25')+(st?.class?' · '+st.class:'');
+  if(el('feeStatSession')) el('feeStatSession').textContent =(st && st.session)||'2024-25';
+  if(el('feeScheduleLabel')) el('feeScheduleLabel').textContent=((st && st.session)||'2024-25')+((st && st.class)?' · '+st.class:'');
   // Fallback to CSS selectors if IDs missing
   const qPaid=el('feeStatPaid')||document.querySelector('.fee-stat.teal h3');
   const qPend=el('feeStatPending')||document.querySelector('.fee-stat.rose h3');
@@ -603,7 +603,7 @@ function renderCalendar(){
   const dim=new Date(calYear,calMonth+1,0).getDate();
   const now=new Date();
   const isNow=now.getFullYear()===calYear&&now.getMonth()===calMonth;
-  const roll=AUTH.student?.roll||'';
+  const roll=(AUTH.student && AUTH.student.roll)||'';
   const mk=`${calYear}-${calMonth}`;
   const monthData=(ATTENDANCE[roll]||{})[mk]||{};
   // month stats
@@ -633,7 +633,7 @@ function renderCalendar(){
   if(ge('attMonthLate'))    ge('attMonthLate').textContent=ml;
 }
 function renderSubjBars(){
-  const roll=AUTH.student?.roll||'';
+  const roll=(AUTH.student && AUTH.student.roll)||'';
   const {present,absent,late,total,overall,workingDays}=getAttSummary(roll);
   const el=document.getElementById('subjAttendList');
   if(!el)return;
@@ -834,7 +834,7 @@ function populatePortal(st){
     : '<p style="opacity:.45;font-size:.85rem">No notices at the moment.</p>';
 
   // Assignments
-  const myAssigns=(ASSIGNS[st.roll]||[]).filter(a=>!a.session||a.session===AUTH.student?.currentSession||true);
+  const myAssigns=(ASSIGNS[st.roll]||[]).filter(a=>!a.session||a.session===(AUTH.student && AUTH.student.currentSession)||true);
   document.getElementById('assignList').innerHTML = myAssigns.length
     ? myAssigns.map(a=>`
     <div class="assign-item">
@@ -910,10 +910,155 @@ function updateAttendanceStats(roll){
 }
 window.downloadIDCard=function(){
   if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=AUTH.student;
+  const today=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ID Card – ${st.name}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#e8ecf0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card-wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.card{width:320px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.front{background:linear-gradient(145deg,#0f3460,#1a1a2e);color:#fff}
+.back{background:#fff;color:#111}
+.card-top{background:linear-gradient(135deg,#16213e,#0f3460);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #4dc3c3}
+.card-top h1{font-size:11px;font-weight:700;letter-spacing:.04em;line-height:1.4;text-transform:uppercase}
+.logo-circle{width:38px;height:38px;background:#4dc3c3;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:900;color:#0f3460}
+.card-body{padding:16px 18px}
+.photo-row{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+.photo{width:70px;height:82px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:28px;color:rgba(255,255,255,.5)}
+.info-rows{flex:1}
+.info-row{margin-bottom:7px}
+.info-row .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;margin-bottom:2px}
+.info-row .val{font-size:12px;font-weight:600}
+.id-badge{background:rgba(77,195,195,.15);border:1px solid rgba(77,195,195,.3);border-radius:6px;padding:6px 12px;text-align:center;margin:10px 0;font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:#4dc3c3;letter-spacing:.1em}
+.validity{font-size:10px;opacity:.5;text-align:center;margin-top:8px}
+.barcode{height:32px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.8) 0,rgba(255,255,255,.8) 2px,transparent 2px,transparent 5px);border-radius:2px;margin:10px 0}
+/* Back */
+.back-top{background:linear-gradient(135deg,#0f3460,#1a1a2e);color:#fff;padding:12px 18px;font-size:10px;text-align:center}
+.back-top h2{font-size:12px;font-weight:700;margin-bottom:2px}
+.rules{padding:14px 18px}
+.rules h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#333;border-bottom:1px solid #eee;padding-bottom:6px;margin-bottom:10px}
+.rules li{font-size:10px;color:#555;margin-bottom:5px;padding-left:12px;position:relative;line-height:1.5}
+.rules li:before{content:'•';position:absolute;left:0;color:#0f3460}
+.sig-row{display:flex;justify-content:space-between;align-items:flex-end;padding:12px 18px;border-top:1px solid #eee;margin-top:8px}
+.sig-box{text-align:center}
+.sig-line{border-top:1px solid #aaa;width:90px;margin:6px auto 3px}
+.sig-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.04em}
+.qr-box{width:48px;height:48px;background:repeating-conic-gradient(#000 0% 25%,#fff 0% 50%) 0 0 / 4px 4px;border:2px solid #333}
+@media print{body{background:#fff;padding:0}.card{box-shadow:none}}
+</style></head>
+<body>
+<div class="card-wrap">
+  <!-- FRONT -->
+  <div class="card front">
+    <div class="card-top">
+      <div class="logo-circle">R</div>
+      <h1>Ram Krishna Paramhans<br>Inter College</h1>
+    </div>
+    <div class="card-body">
+      <div class="photo-row">
+        <div class="photo">👤</div>
+        <div class="info-rows">
+          <div class="info-row"><div class="lbl">Full Name</div><div class="val">${st.name}</div></div>
+          <div class="info-row"><div class="lbl">Class</div><div class="val">${st.class}${st.stream?' – '+st.stream:''}</div></div>
+          <div class="info-row"><div class="lbl">Section</div><div class="val">${st.section||'A'}</div></div>
+          <div class="info-row"><div class="lbl">Session</div><div class="val">${st.session||'2025-26'}</div></div>
+        </div>
+      </div>
+      <div class="id-badge">${st.roll}</div>
+      <div class="barcode"></div>
+      <div class="validity">Valid for Session ${st.session||'2025-26'}</div>
+    </div>
+  </div>
+  <!-- BACK -->
+  <div class="card back">
+    <div class="back-top">
+      <h2>Ram Krishna Paramhans Inter College</h2>
+      <div>Nagal, Saharanpur · UP · Phone: +91 95571 45962</div>
+    </div>
+    <div class="rules">
+      <h3>Important Instructions</h3>
+      <ul>
+        <li>This card must be carried to school every day.</li>
+        <li>Report loss to the office immediately.</li>
+        <li>Card must be produced on demand by staff.</li>
+        <li>Valid only for the current academic session.</li>
+        <li>Not transferable. Misuse is punishable.</li>
+      </ul>
+    </div>
+    <div class="sig-row">
+      <div class="sig-box">
+        <div class="qr-box"></div>
+        <div class="sig-label" style="margin-top:4px">Scan to Verify</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-label">Principal</div>
+        <div class="sig-label">RKPH Inter College</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`;
+  triggerDownload(`IDCard_${st.roll}.html`,html);
   showToast('ID Card downloaded!','success');
 };
-window.downloadStudyMaterial=function(){showToast('Study material download initiated!','success');};
-window.downloadPreviousPapers=function(){showToast('Previous papers download initiated!','success');};
+
+window.downloadStudyMaterial=function(){
+  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=AUTH.student;
+  const cls=st.class||'Class 11';
+  const clsNum=parseInt((cls.match(/\d+/)||['11'])[0]);
+  // Generate subject list based on class
+  let subjects=[];
+  if(clsNum<=5) subjects=['Hindi','English','Mathematics','EVS','Drawing'];
+  else if(clsNum<=8) subjects=['Hindi','English','Mathematics','Science','Social Science','Sanskrit'];
+  else if(clsNum<=10) subjects=['Hindi','English','Mathematics','Science','Social Science','Sanskrit'];
+  else if(st.stream&&st.stream.includes('PCM')) subjects=['Physics','Chemistry','Mathematics','English','Hindi'];
+  else if(st.stream&&st.stream.includes('PCB')) subjects=['Physics','Chemistry','Biology','English','Hindi'];
+  else subjects=['Hindi','English','History','Geography','Political Science'];
+  const today=new Date().toLocaleDateString('en-IN',{dateStyle:'long'});
+  const rows=subjects.map((sub,i)=>`<tr><td>${i+1}</td><td>${sub}</td><td>Chapter 1-${Math.floor(Math.random()*5)+6}</td><td>PDF · ${(Math.random()*3+1).toFixed(1)} MB</td><td><span style="background:#e8faf3;color:#1a9e6b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Available</span></td></tr>`).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Study Material – ${cls}</title>
+<style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #0f3460;padding-bottom:14px;margin-bottom:22px}.hdr h1{font-size:20px;margin:0 0 4px}.note{background:#fff8e1;border:1px solid #f5c842;border-radius:6px;padding:12px 16px;font-size:13px;margin-bottom:20px;color:#7d5a00}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0f3460;color:#fff;padding:10px 12px;text-align:left}td{padding:9px 12px;border-bottom:1px solid #eee}.footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head>
+<body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Study Material Index — ${cls} | Session ${st.session||'2025-26'}</p></div>
+<div class="note">📚 Study materials are available in the school library and will be distributed in class. Contact your subject teacher for digital copies.</div>
+<table><thead><tr><th>#</th><th>Subject</th><th>Chapters Covered</th><th>File Size</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="footer">Generated on ${today} · RKPH Inter College · Contact office for actual downloads</div>
+</body></html>`;
+  triggerDownload(`StudyMaterial_${cls.replace(' ','')}_${st.roll}.html`,html);
+  showToast('Study material list downloaded!','success');
+};
+
+window.downloadPreviousPapers=function(){
+  if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=AUTH.student;
+  const cls=st.class||'Class 11';
+  const clsNum=parseInt((cls.match(/\d+/)||['11'])[0]);
+  let subjects=[];
+  if(clsNum<=5) subjects=['Hindi','English','Mathematics','EVS'];
+  else if(clsNum<=10) subjects=['Hindi','English','Mathematics','Science','Social Science'];
+  else if(st.stream&&st.stream.includes('PCM')) subjects=['Physics','Chemistry','Mathematics','English','Hindi'];
+  else if(st.stream&&st.stream.includes('PCB')) subjects=['Physics','Chemistry','Biology','English','Hindi'];
+  else subjects=['Hindi','English','History','Geography','Political Science'];
+  const years=['2024-25','2023-24','2022-23','2021-22','2020-21'];
+  const today=new Date().toLocaleDateString('en-IN',{dateStyle:'long'});
+  let rows='';
+  years.forEach(yr=>{
+    subjects.forEach(sub=>{
+      rows+=`<tr><td>${yr}</td><td>${sub}</td><td>Half Yearly + Annual</td><td>${(Math.random()*1.5+0.5).toFixed(1)} MB</td><td><span style="background:#e8f4fd;color:#0f3460;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">In Library</span></td></tr>`;
+    });
+  });
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Previous Papers – ${cls}</title>
+<style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#111}.hdr{text-align:center;border-bottom:2px solid #0f3460;padding-bottom:14px;margin-bottom:22px}.hdr h1{font-size:20px;margin:0 0 4px}.note{background:#e8f4fd;border:1px solid #0f3460;border-radius:6px;padding:12px 16px;font-size:13px;margin-bottom:20px;color:#0f3460}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0f3460;color:#fff;padding:10px 12px;text-align:left}td{padding:9px 12px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#f8f9fc}.footer{margin-top:24px;text-align:center;font-size:12px;color:#888}</style></head>
+<body><div class="hdr"><h1>Ram Krishna Paramhans Inter College</h1><p>Previous Year Question Papers — ${cls} | Session ${st.session||'2025-26'}</p></div>
+<div class="note">📝 Question papers are available in the school library. Students may collect printed copies from the office between 10 AM – 1 PM on working days.</div>
+<table><thead><tr><th>Session</th><th>Subject</th><th>Exam Type</th><th>File Size</th><th>Availability</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="footer">Generated on ${today} · RKPH Inter College · Visit school library for physical copies</div>
+</body></html>`;
+  triggerDownload(`PreviousPapers_${cls.replace(' ','')}_${st.roll}.html`,html);
+  showToast('Previous papers list downloaded!','success');
+};
 
 /* ═══════════════════════════════════
    CERTIFICATES
@@ -941,10 +1086,83 @@ function populateCertificates(){
 }
 window.downloadCert=function(name){
   if(!AUTH.loggedIn){showToast('Please log in first','error');return}
+  const st=AUTH.student;
+  const today=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const cert=CERTS.find(c=>c.n===name);
+  if(!cert||!cert.avail){showToast('Certificate not available. Contact office.','error');return}
+
+  /* ── shared header / footer for all certs ── */
+  const letterHead=`<div class="hdr">
+    <h1>Ram Krishna Paramhans Inter College</h1>
+    <p>Nagal, Saharanpur, Uttar Pradesh – 247551</p>
+    <p>Affiliated to UP Board | Phone: +91 95571 45962</p>
+    <div class="hdr-line"></div>
+    <h2>${name.toUpperCase()}</h2>
+  </div>`;
+  const baseStyle=`body{font-family:'Times New Roman',serif;max-width:720px;margin:40px auto;padding:40px;border:3px double #0f3460;color:#111}
+  .hdr{text-align:center;margin-bottom:28px}.hdr h1{font-size:22px;font-weight:700;margin-bottom:4px}.hdr p{font-size:13px;margin:2px 0;color:#444}
+  .hdr-line{border-bottom:2px solid #0f3460;margin:12px 0 8px}.hdr h2{font-size:16px;letter-spacing:.08em;text-decoration:underline;text-underline-offset:4px}
+  .body{font-size:14px;line-height:2;text-align:justify}
+  .body p{margin-bottom:12px}
+  .highlight{font-weight:700}
+  .sig{display:flex;justify-content:space-between;align-items:flex-end;margin-top:48px}
+  .sig-block{text-align:center}
+  .sig-line{border-top:1px solid #333;width:160px;margin:6px auto 3px}
+  .sig-label{font-size:12px}
+  .cert-no{font-size:12px;color:#666;margin-bottom:24px}
+  .stamp{display:inline-block;border:3px solid #0f3460;color:#0f3460;padding:8px 24px;border-radius:50%;font-size:13px;font-weight:700;transform:rotate(-10deg);margin-top:16px;letter-spacing:.05em}
+  @media print{body{margin:0;border:none}}`;
+
+  let bodyContent='';
+
+  if(name==='Character Certificate'){
+    bodyContent=`<p>This is to certify that <span class="highlight">${st.name}</span>, son/daughter of <span class="highlight">${st.father||'—'}</span>, was/is a student of this institution during the academic session <span class="highlight">${st.session||'2025-26'}</span> in <span class="highlight">${st.class}${st.stream?' – '+st.stream:''}</span>.</p>
+<p>During the period of his/her study in this institution, his/her <span class="highlight">character and conduct have been found to be GOOD</span>. He/she has not been involved in any act of indiscipline and has always maintained good behaviour with fellow students and faculty members.</p>
+<p>This certificate is being issued on the request of the student for the purpose as stated.</p>`;
+  } else if(name==='Bonafide Certificate'){
+    bodyContent=`<p>This is to certify that <span class="highlight">${st.name}</span>, Roll No. <span class="highlight">${st.roll}</span>, is a <span class="highlight">bonafide student</span> of this institution.</p>
+<p>He/She is currently studying in <span class="highlight">${st.class}${st.stream?' – '+st.stream:''}</span> during the academic session <span class="highlight">${st.session||'2025-26'}</span>.</p>
+<p>His/Her date of birth as per school records is <span class="highlight">${st.dob||'—'}</span>.</p>
+<p>This certificate is issued for the purpose of scholarship / bank account / government form submission as requested by the student / guardian.</p>`;
+  } else if(name==='Mark Sheet 2024-25'){
+    // Use RESULTS data if available
+    const resultKey=Object.keys(RESULTS).find(k=>k.startsWith(st.roll+'|')&&k.includes('Annual'));
+    const res=resultKey?RESULTS[resultKey]:null;
+    const rows=res?res.subjects.map(s=>`<tr><td>${s.n}</td><td style="text-align:center">${s.mm}</td><td style="text-align:center">${s.obt}</td><td style="text-align:center;font-weight:700">${s.g}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#888">Results not yet declared for this session</td></tr>';
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} – ${st.name}</title>
+<style>${baseStyle}table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}th{background:#0f3460;color:#fff;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #ddd}.summary{display:flex;gap:16px;margin-top:16px}.s-cell{flex:1;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center}.s-cell span{display:block;font-size:11px;color:#666;text-transform:uppercase;margin-bottom:3px}.s-cell strong{font-size:16px}</style></head>
+<body>${letterHead}<div class="cert-no">Cert No: RKPH/${new Date().getFullYear()}/${st.roll}/MS01 &nbsp;|&nbsp; Date: ${today}</div>
+<div class="body"><p>This is to certify that <span class="highlight">${st.name}</span>, Roll No. <span class="highlight">${st.roll}</span>, appeared in the <span class="highlight">Annual Examination 2024-25</span> in <span class="highlight">${st.class}${st.stream?' – '+st.stream:''}</span>.</p>
+${res?`<p>Result Summary:</p>`:''}
+</div>
+<table><thead><tr><th>Subject</th><th style="text-align:center">Max Marks</th><th style="text-align:center">Marks Obtained</th><th style="text-align:center">Grade</th></tr></thead><tbody>${rows}</tbody></table>
+${res?`<div class="summary"><div class="s-cell"><span>Total</span><strong>${res.total}/${res.mm}</strong></div><div class="s-cell"><span>Percentage</span><strong>${res.pct?res.pct.toFixed(1)+'%':'—'}</strong></div><div class="s-cell"><span>Grade</span><strong>${res.grade||'—'}</strong></div><div class="s-cell"><span>Result</span><strong style="color:${(res.pct||0)>=33?'#1a9e6b':'#c0392b'}">${(res.pct||0)>=33?'PASS':'FAIL'}</strong></div></div>`:''}
+<div class="sig"><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div><div><div class="stamp">SCHOOL SEAL</div></div><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Principal</div><div class="sig-label">RKPH Inter College</div></div></div>
+</body></html>`;
+    triggerDownload(`MarkSheet_2024-25_${st.roll}.html`,html);
+    showToast('Mark Sheet downloaded!','success'); return;
+  } else if(name==='Sports Certificate'){
+    bodyContent=`<p>This is to certify that <span class="highlight">${st.name}</span>, Roll No. <span class="highlight">${st.roll}</span>, a student of <span class="highlight">${st.class}${st.stream?' – '+st.stream:''}</span>, has actively participated in the <span class="highlight">Inter-School Sports Events</span> organised by Ram Krishna Paramhans Inter College during the session <span class="highlight">2025-26</span>.</p>
+<p>He/She has shown <span class="highlight">outstanding sportsmanship, dedication, and team spirit</span> throughout the competitions. His/Her participation has brought credit to the institution.</p>
+<p>This certificate is awarded in recognition of his/her sports achievements and participation.</p>`;
+  }
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} – ${st.name}</title>
+<style>${baseStyle}</style></head>
+<body>${letterHead}
+<div class="cert-no">Cert No: RKPH/${new Date().getFullYear()}/${st.roll}/${name.substring(0,2).toUpperCase()}01 &nbsp;|&nbsp; Date: ${today}</div>
+<div class="body">${bodyContent}<p>This certificate is issued on <span class="highlight">${today}</span>.</p></div>
+<div class="sig">
+  <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div>
+  <div style="text-align:center"><div class="stamp">SCHOOL SEAL</div></div>
+  <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Principal</div><div class="sig-label">RKPH Inter College</div></div>
+</div>
+</body></html>`;
+  triggerDownload(`${name.replace(/ /g,'_')}_${st.roll}.html`,html);
   showToast(`${name} downloaded!`,'success');
 };
 window.submitCertRequest=function(){
-  const purpose=document.getElementById('certPurpose')?.value||'';
+  const purpose=(document.getElementById('certPurpose') ? document.getElementById('certPurpose').value : '')||'';
   if(!purpose.trim()){showToast('Please enter purpose of certificate','error');return}
   showToast('Certificate request submitted. Ready in 2–3 working days.','success');
 };
