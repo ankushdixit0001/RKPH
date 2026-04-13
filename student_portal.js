@@ -99,36 +99,52 @@ window.togglePass=function(){
   inp.type=show?'text':'password';
   icon.className=show?'fas fa-eye-slash':'fas fa-eye';
 };
-window.doLogin=function(){
-  const roll=document.getElementById('loginRoll').value.trim().toUpperCase();
-  const pass=document.getElementById('loginPass').value.trim();
-  if(!roll||!pass){showToast('Enter Roll Number and Password','error');return}
-  const st=STUDENTS[roll];
-  if(!st||st.pass!==pass){
-    shake(document.querySelector('.login-card'));
-    showToast('Invalid Roll Number or Password','error'); return;
+
+window.doLogin = async function() {
+  const roll = document.getElementById('loginRoll').value.trim().toUpperCase();
+  const pass = document.getElementById('loginPass').value.trim();
+
+  if (!roll || !pass) {
+    alert("Enter Roll Number and Password");
+    return;
   }
-  AUTH={loggedIn:true,student:st};
-  document.getElementById('loginFormWrap').style.display='none';
-  document.getElementById('loginDashboard').style.display='block';
-  document.getElementById('dashName').textContent=st.name;
-  document.getElementById('dashMeta').textContent=`${st.class} – ${st.stream||'General'} · Roll: ${st.roll}`;
-  document.getElementById('spUserBadge').style.display='flex';
-  document.getElementById('spUserName').textContent=st.shortName||st.name.split(' ')[0];
-  if(document.getElementById('rememberMe').checked) sessionStorage.setItem('sp_roll',roll);
+
+  const { data, error } = await supabase
+    .from('students')
+    .select('*')
+    .eq('roll', roll)
+    .single();
+
+  if (error || !data) {
+    alert("Student not found");
+    return;
+  }
+
+  if (data.password !== pass) {
+    alert("Wrong password");
+    return;
+  }
+
+  AUTH = { loggedIn: true, student: data };
+
+  loadFees(data.roll);
+  loadAttendance(data.roll);
+
+  document.getElementById('loginFormWrap').style.display = 'none';
+  document.getElementById('loginDashboard').style.display = 'block';
+
+  document.getElementById('dashName').textContent = data.name;
+  document.getElementById('dashMeta').textContent =
+    `${data.class} · Roll: ${data.roll}`;
+
+  document.getElementById('spUserBadge').style.display = 'flex';
+  document.getElementById('spUserName').textContent = data.name.split(' ')[0];
+
   unlockAuthSections();
-  populatePortal(st);
-  populateCertificates();
-  renderFeeTable('all');
-  updateFeeStats(st.roll);
-  renderCalendar();
-  renderSubjBars();
-  // Auto-select timetable class for student
-  const clsNum=(st.class||'').replace(/\D/g,'')||'11';
-  const ttSel=document.getElementById('ttClassSelect');
-  if(ttSel&&TT_DATA[parseInt(clsNum)]){ttSel.value=clsNum; changeTTClass(clsNum);}
-  showToast(`Welcome back, ${st.name.split(' ')[0]}!`,'success');
-};;
+
+  alert("Login successful 🚀");
+};
+
 window.doLogout=function(){
   AUTH={loggedIn:false,student:null};
   sessionStorage.removeItem('sp_roll');
@@ -188,24 +204,49 @@ function initResults(){
       <i class="fas fa-arrow-right rq-arrow"></i>
     </div>`).join('');
 }
-window.searchResult=function(){
-  const query=(document.getElementById('resQuery').value||'').trim();
-  const cls  =document.getElementById('resClass').value||'';
-  const exam =document.getElementById('resExam').value||'';
-  if(!query){showToast('Enter a name or roll number','error');return}
-  const matches=Object.entries(RESULTS).filter(([key,data])=>{
-    const rollOk=key.startsWith(query.toUpperCase());
-    const nameOk=data.name.toLowerCase().includes(query.toLowerCase());
-    const clsOk =!cls||key.includes('|'+cls+'|');
-    const examOk=!exam||key.endsWith('|'+exam);
-    return (rollOk||nameOk)&&clsOk&&examOk;
+
+window.searchResult = async function() {
+  const query = document.getElementById('resQuery').value.trim().toUpperCase();
+
+  if (!query) {
+    alert("Enter roll number");
+    return;
+  }
+
+  // 🔥 Supabase se results fetch
+  const { data, error } = await supabase
+    .from('results')
+    .select('*')
+    .eq('roll', query);
+
+  if (error || !data || data.length === 0) {
+    alert("No result found");
+    return;
+  }
+
+  // 🎯 UI render karna
+  const resultDiv = document.getElementById('resultOutput');
+  
+  let html = `<h3>Results for ${query}</h3><div class="marks">`;
+
+  data.forEach(r => {
+    html += `
+      <div style="margin-bottom:10px;padding:10px;border:1px solid #ccc">
+        <strong>${r.subject}</strong><br>
+        Marks: ${r.marks} / ${r.max_marks}<br>
+        Grade: ${r.grade}<br>
+        Exam: ${r.exam}
+      </div>
+    `;
   });
-  if(!matches.length){showToast('No result found. Check name / roll number.','error');return}
-  const [,data]=matches[0];
-  const examLabel=matches[0][0].split('|')[2];
-  renderResult(data,examLabel);
-  document.getElementById('resultOutput').scrollIntoView({behavior:'smooth',block:'start'});
+
+  html += `</div>`;
+
+  resultDiv.innerHTML = html;
+  resultDiv.style.display = 'block';
 };
+
+
 window.loadQuick=function(cls,exam){
   document.getElementById('resClass').value=cls;
   document.getElementById('resExam').value=exam;
@@ -1213,3 +1254,67 @@ window.selectPay=function(btn,method){
   else if(method==='card') area.innerHTML=`<input type="text" class="sp-input" placeholder="Card Number" style="margin-bottom:7px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><input type="text" class="sp-input" placeholder="MM / YY"><input type="text" class="sp-input" placeholder="CVV"></div>`;
   else area.innerHTML=`<input type="text" class="sp-input" placeholder="Account Number" style="margin-bottom:7px"><input type="text" class="sp-input" placeholder="IFSC Code">`;
 };
+
+
+
+async function loadFees(roll) {
+  const { data, error } = await supabase
+    .from('fees')
+    .select('*')
+    .eq('roll', roll);
+
+  if (error) {
+    console.error("Fees error:", error);
+    return;
+  }
+
+  let html = "<h3>Fees Details</h3>";
+
+  if (data.length === 0) {
+    html += "<p>No fees data found</p>";
+  }
+
+  data.forEach(f => {
+    html += `
+      <div style="padding:10px;border:1px solid #ccc;margin:5px">
+        <strong>Amount:</strong> ₹${f.amount}<br>
+        <strong>Status:</strong> ${f.status}<br>
+        <strong>Date:</strong> ${f.date}
+      </div>
+    `;
+  });
+
+  document.getElementById('fees').innerHTML = html;
+}
+
+
+async function loadAttendance(roll) {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('roll', roll);
+
+  if (error) {
+    console.error("Attendance error:", error);
+    return;
+  }
+
+  let html = "<h3>Attendance</h3>";
+
+  if (data.length === 0) {
+    html += "<p>No attendance data found</p>";
+  }
+
+  data.forEach(a => {
+    html += `
+      <div style="padding:10px;border:1px solid #ccc;margin:5px">
+        <strong>Date:</strong> ${a.date}<br>
+        <strong>Status:</strong> ${a.status}
+      </div>
+    `;
+  });
+
+  document.getElementById('attendance').innerHTML = html;
+}
+
+

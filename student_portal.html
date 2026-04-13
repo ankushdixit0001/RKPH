@@ -509,7 +509,19 @@
 </footer>
 
 <div id="spToast" class="sp-toast" style="display:none"></div>
-<script src="rkph_data.js"></script>
+<!-- <script src="rkph_data.js"></script> -->
 <script src="student_portal.js"></script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+const supabaseUrl = "https://xkmgugmhfmilgccwpqbi.supabase.co";
+const supabaseKey = "sb_publishable_xGQ5xycskcU8MaabewpWYw_ZLqxbgZ7";
+
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+</script>
 </body>
 </html>
