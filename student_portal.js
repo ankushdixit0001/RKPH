@@ -109,7 +109,7 @@ window.doLogin = async function() {
     return;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('students')
     .select('*')
     .eq('roll', roll)
@@ -213,8 +213,8 @@ window.searchResult = async function() {
     return;
   }
 
-  // 🔥 Supabase se results fetch
-  const { data, error } = await supabase
+  // 🔥 supabaseClient se results fetch
+  const { data, error } = await supabaseClient
     .from('results')
     .select('*')
     .eq('roll', query);
@@ -1258,7 +1258,7 @@ window.selectPay=function(btn,method){
 
 
 async function loadFees(roll) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('fees')
     .select('*')
     .eq('roll', roll);
@@ -1289,7 +1289,7 @@ async function loadFees(roll) {
 
 
 async function loadAttendance(roll) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('attendance')
     .select('*')
     .eq('roll', roll);
