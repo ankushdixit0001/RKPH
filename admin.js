@@ -1358,6 +1358,221 @@ window.addEventListener("load", () => {
   });
 });
 
+/* =====================================================
+   DB SYNC JS PATCH
+   Connect Notices + Assignments + Attendance to Supabase
+   Paste inside your current admin.js
+===================================================== */
+
+/* ===============================
+   FETCH MODULE DATA
+=============================== */
+async function fetchNotices() {
+  const { data, error } = await supabaseClient
+    .from("notice")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (!error) STATE.notices = data || [];
+}
+
+async function fetchAssignments() {
+  const { data, error } = await supabaseClient
+    .from("assignment")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (!error) STATE.assignments = data || [];
+}
+
+async function fetchAttendance() {
+  const { data, error } = await supabaseClient
+    .from("attendance")
+    .select("*")
+    .order("att_date", { ascending: false });
+
+  if (!error) STATE.attendance = data || [];
+}
+
+/* ===============================
+   LOAD ALL ON LOGIN
+=============================== */
+async function loadExtraModules() {
+  await Promise.all([
+    fetchNotices(),
+    fetchAssignments(),
+    fetchAttendance()
+  ]);
+
+  renderNoticeLists();
+  renderAssignTable();
+  fetchDashboardStats();
+}
+
+/* call this after successful login */
+const oldLogin = window.doAdminLogin;
+window.doAdminLogin = async function () {
+  await oldLogin();
+
+  if (STATE.loggedIn) {
+    await loadExtraModules();
+  }
+};
+
+/* ===============================
+   SAVE NOTICE TO DB
+=============================== */
+window.saveNotice = async function () {
+  try {
+    const payload = {
+      title: val("n_title"),
+      notice_date: val("n_date"),
+      tag: val("n_tag"),
+      type: val("n_type"),
+      target_class: val("n_class"),
+      target_roll: val("n_student"),
+      urgent: byId("n_urgent").checked
+    };
+
+    const { error } = await supabaseClient
+      .from("notice")
+      .insert([payload]);
+
+    if (error) throw error;
+
+    toast("Notice Saved");
+    closeModal("noticeModal");
+
+    await fetchNotices();
+    renderNoticeLists();
+    fetchDashboardStats();
+
+  } catch (err) {
+    toast(err.message || "Save failed", "error");
+  }
+};
+
+/* ===============================
+   SAVE ASSIGNMENT TO DB
+=============================== */
+window.saveAssign = async function () {
+  try {
+    const payload = {
+      roll: val("assignStudentPicker"),
+      class: val("assignClassFilter"),
+      subject: val("a_sub"),
+      title: val("a_title"),
+      due_date: val("a_due"),
+      session: "2025-26",
+      status: byId("a_done").checked
+        ? "Submitted"
+        : "Pending"
+    };
+
+    const { error } = await supabaseClient
+      .from("assignment")
+      .insert([payload]);
+
+    if (error) throw error;
+
+    toast("Assignment Saved");
+    closeModal("assignModal");
+
+    await fetchAssignments();
+    renderAssignTable();
+    fetchDashboardStats();
+
+  } catch (err) {
+    toast(err.message || "Save failed", "error");
+  }
+};
+
+/* ===============================
+   RENDER ASSIGNMENTS
+=============================== */
+window.renderAssignTable = function () {
+  const tbody = byId("assignTbody");
+  if (!tbody) return;
+
+  const rows = STATE.assignments;
+
+  if (!rows.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="6"
+      style="padding:24px;text-align:center">
+      No assignments
+      </td></tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(a => `
+    <tr>
+      <td>${a.subject || "-"}</td>
+      <td>${a.title || "-"}</td>
+      <td>${a.due_date || "-"}</td>
+      <td>${a.session || "-"}</td>
+      <td>${a.status || "-"}</td>
+      <td>${a.roll || a.class || "-"}</td>
+    </tr>
+  `).join("");
+};
+
+/* ===============================
+   MARK ATTENDANCE TO DB
+=============================== */
+window.markAttendance = async function () {
+  try {
+    const roll = val("attStudentPicker");
+    const attDate = val("attDate");
+
+    if (!roll || !attDate) {
+      toast("Select student & date", "error");
+      return;
+    }
+
+    const payload = {
+      roll: roll,
+      att_date: attDate,
+      status: val("attStatus"),
+      remarks: val("attRemarks")
+    };
+
+    const { error } = await supabaseClient
+      .from("attendance")
+      .insert([payload]);
+
+    if (error) throw error;
+
+    toast("Attendance Saved");
+
+    await fetchAttendance();
+
+  } catch (err) {
+    toast(err.message || "Save failed", "error");
+  }
+};
+
+/* ===============================
+   RENDER NOTICES
+=============================== */
+function renderNoticeLists() {
+  const box = byId("noticeGlobalList");
+  if (!box) return;
+
+  if (!STATE.notices.length) {
+    box.innerHTML =
+      `<div style="color:#94a3b8">No notices</div>`;
+    return;
+  }
+
+  box.innerHTML = STATE.notices.map(n => `
+    <div class="mini-pill">
+      ${n.title}
+    </div>
+  `).join("");
+}
+
 /* ===============================
    END OF FILE
 =============================== */
