@@ -1359,268 +1359,189 @@ window.addEventListener("load", () => {
 });
 
 /* =====================================================
-   DB SYNC JS PATCH
-   Connect Notices + Assignments + Attendance to Supabase
-   Paste inside your current admin.js
+PART 5 CLEAN FINAL
 ===================================================== */
 
-/* ===============================
-   FETCH MODULE DATA
-=============================== */
-async function fetchNotices() {
-  const { data, error } = await supabaseClient
-    .from("notice")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (!error) STATE.notices = data || [];
+/* ---------- FETCH ---------- */
+async function fetchNotices(){
+ const {data}=await supabaseClient.from("notice").select("*").order("created_at",{ascending:false});
+ STATE.notices=data||[];
 }
 
-async function fetchAssignments() {
-  const { data, error } = await supabaseClient
-    .from("assignment")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (!error) STATE.assignments = data || [];
+async function fetchAssignments(){
+ const {data}=await supabaseClient.from("assignment").select("*").order("created_at",{ascending:false});
+ STATE.assignments=data||[];
 }
 
-async function fetchAttendance() {
-  const { data, error } = await supabaseClient
-    .from("attendance")
-    .select("*")
-    .order("att_date", { ascending: false });
-
-  if (!error) STATE.attendance = data || [];
+async function fetchAttendance(){
+ const {data}=await supabaseClient.from("attendance").select("*").order("att_date",{ascending:false});
+ STATE.attendance=data||[];
 }
 
-/* ===============================
-   LOAD ALL ON LOGIN
-=============================== */
-async function loadExtraModules() {
-  await Promise.all([
-    fetchNotices(),
-    fetchAssignments(),
-    fetchAttendance()
-  ]);
-
-  renderNoticeLists();
-  renderAssignTable();
-  fetchDashboardStats();
-}
-
-/* call this after successful login */
-const oldLogin = window.doAdminLogin;
-window.doAdminLogin = async function () {
-  await oldLogin();
-
-  if (STATE.loggedIn) {
-    await loadExtraModules();
-  }
+/* ---------- NOTICE ---------- */
+window.openNoticeModal=function(){
+ openModal("noticeModal");
 };
 
-/* ===============================
-   SAVE NOTICE TO DB
-=============================== */
-window.saveNotice = async function () {
-  try {
-    const payload = {
-      title: val("n_title"),
-      notice_date: val("n_date"),
-      tag: val("n_tag"),
-      type: val("n_type"),
-      target_class: val("n_class"),
-      target_roll: val("n_student"),
-      urgent: byId("n_urgent").checked
-    };
+window.saveNotice=async function(){
+ await supabaseClient.from("notice").insert([{
+   title:val("n_title"),
+   notice_date:val("n_date"),
+   tag:val("n_tag"),
+   type:val("n_type"),
+   target_class:val("n_class"),
+   target_roll:val("n_student"),
+   urgent:byId("n_urgent").checked
+ }]);
 
-    const { error } = await supabaseClient
-      .from("notice")
-      .insert([payload]);
-
-    if (error) throw error;
-
-    toast("Notice Saved");
-    closeModal("noticeModal");
-
-    await fetchNotices();
-    renderNoticeLists();
-    fetchDashboardStats();
-
-  } catch (err) {
-    toast(err.message || "Save failed", "error");
-  }
+ closeModal("noticeModal");
+ await fetchNotices();
+ renderNoticeLists();
+ fetchDashboardStats();
+ toast("Notice Saved");
 };
 
-/* ===============================
-   SAVE ASSIGNMENT TO DB
-=============================== */
-window.saveAssign = async function () {
-  try {
-    const payload = {
-      roll: val("assignStudentPicker"),
-      class: val("assignClassFilter"),
-      subject: val("a_sub"),
-      title: val("a_title"),
-      due_date: val("a_due"),
-      session: "2025-26",
-      status: byId("a_done").checked
-        ? "Submitted"
-        : "Pending"
-    };
+window.renderNoticeLists=function(){
+ const box=byId("noticeGlobalList");
+ if(!box)return;
 
-    const { error } = await supabaseClient
-      .from("assignment")
-      .insert([payload]);
+ const rows=STATE.notices.filter(x=>x.type==="global");
 
-    if (error) throw error;
-
-    toast("Assignment Saved");
-    closeModal("assignModal");
-
-    await fetchAssignments();
-    renderAssignTable();
-    fetchDashboardStats();
-
-  } catch (err) {
-    toast(err.message || "Save failed", "error");
-  }
+ box.innerHTML=rows.length
+ ? rows.map(x=>`<div class="mini-pill">${x.title}</div>`).join("")
+ : "No notices";
 };
 
-/* ===============================
-   RENDER ASSIGNMENTS
-=============================== */
-window.renderAssignTable = function () {
-  const tbody = byId("assignTbody");
-  if (!tbody) return;
-
-  const rows = STATE.assignments;
-
-  if (!rows.length) {
-    tbody.innerHTML = `
-      <tr><td colspan="6"
-      style="padding:24px;text-align:center">
-      No assignments
-      </td></tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = rows.map(a => `
-    <tr>
-      <td>${a.subject || "-"}</td>
-      <td>${a.title || "-"}</td>
-      <td>${a.due_date || "-"}</td>
-      <td>${a.session || "-"}</td>
-      <td>${a.status || "-"}</td>
-      <td>${a.roll || a.class || "-"}</td>
-    </tr>
-  `).join("");
+/* ---------- ASSIGNMENT ---------- */
+window.openAssignModal=function(){
+ openModal("assignModal");
 };
 
-/* ===============================
-   MARK ATTENDANCE TO DB
-=============================== */
-window.markAttendance = async function () {
-  try {
-    const roll = val("attStudentPicker");
-    const attDate = val("attDate");
+window.filterAssignByClass=function(){
+ const cls=val("assignClassFilter");
+ const sel=byId("assignStudentPicker");
 
-    if (!roll || !attDate) {
-      toast("Select student & date", "error");
-      return;
-    }
+ let rows=[...STATE.students];
+ if(cls) rows=rows.filter(x=>x.class===cls);
 
-    const payload = {
-      roll: roll,
-      att_date: attDate,
-      status: val("attStatus"),
-      remarks: val("attRemarks")
-    };
+ sel.innerHTML=`<option value="">Select Student</option>`+
+ rows.map(x=>`<option value="${x.roll}">${x.roll} - ${x.name}</option>`).join("");
 
-    const { error } = await supabaseClient
-      .from("attendance")
-      .insert([payload]);
-
-    if (error) throw error;
-
-    toast("Attendance Saved");
-
-    await fetchAttendance();
-
-  } catch (err) {
-    toast(err.message || "Save failed", "error");
-  }
+ byId("addAssignBtn").disabled=false;
 };
 
-/* ===============================
-   RENDER NOTICES
-=============================== */
-function renderNoticeLists() {
-  const box = byId("noticeGlobalList");
-  if (!box) return;
+window.saveAssign=async function(){
+ await supabaseClient.from("assignment").insert([{
+   roll:val("assignStudentPicker"),
+   class:val("assignClassFilter"),
+   subject:val("a_sub"),
+   title:val("a_title"),
+   due_date:val("a_due"),
+   session:"2025-26",
+   status:byId("a_done").checked?"Submitted":"Pending"
+ }]);
 
-  if (!STATE.notices.length) {
-    box.innerHTML =
-      `<div style="color:#94a3b8">No notices</div>`;
-    return;
-  }
+ closeModal("assignModal");
+ await fetchAssignments();
+ renderAssignTable();
+ fetchDashboardStats();
+ toast("Assignment Saved");
+};
 
-  box.innerHTML = STATE.notices.map(n => `
-    <div class="mini-pill">
-      ${n.title}
-    </div>
-  `).join("");
-}
+window.renderAssignTable=function(){
+ const tbody=byId("assignTbody");
+ if(!tbody)return;
 
-/* ========= FINAL LOAD FIX ========= */
+ tbody.innerHTML=STATE.assignments.length
+ ? STATE.assignments.map(x=>`
+ <tr>
+   <td>${x.subject||"-"}</td>
+   <td>${x.title||"-"}</td>
+   <td>${x.due_date||"-"}</td>
+   <td>${x.session||"-"}</td>
+   <td>${x.status||"-"}</td>
+   <td>${x.roll||x.class||"-"}</td>
+ </tr>`).join("")
+ : `<tr><td colspan="6">No assignments</td></tr>`;
+};
 
-async function loadAllDbModules() {
-  try {
-    await Promise.all([
-      fetchNotices(),
-      fetchAssignments(),
-      fetchAttendance()
-    ]);
+/* ---------- ATTENDANCE ---------- */
+window.filterAttByClass=function(){
+ const cls=val("attClassFilter");
+ const sel=byId("attStudentPicker");
 
-    renderNoticeLists();
-    renderAssignTable();
-    fetchDashboardStats();
+ let rows=[...STATE.students];
+ if(cls) rows=rows.filter(x=>x.class===cls);
 
-  } catch (e) {
-    console.error(e);
-  }
-}
+ sel.innerHTML=`<option value="">Select Student</option>`+
+ rows.map(x=>`<option value="${x.roll}">${x.roll} - ${x.name}</option>`).join("");
+};
 
-/* run after page load */
-window.addEventListener("load", async () => {
-  if (localStorage.getItem("rkph_admin_login") === "1") {
-    await loadAllDbModules();
-  }
+window.renderAttendance=function(){
+ const wrap=byId("attEditorWrap");
+ const roll=val("attStudentPicker");
+
+ if(!roll){
+   wrap.innerHTML="Select student first";
+   return;
+ }
+
+ wrap.innerHTML=`
+ <div class="card"><div class="card-body">
+ <input type="date" id="attDate" class="f-input"><br><br>
+ <select id="attStatus" class="f-input">
+ <option>Present</option>
+ <option>Absent</option>
+ <option>Leave</option>
+ </select><br><br>
+ <input id="attRemarks" class="f-input" placeholder="Remarks"><br><br>
+ <button class="btn btn-teal" onclick="markAttendance()">Save Attendance</button>
+ </div></div>`;
+};
+
+window.markAttendance=async function(){
+ await supabaseClient.from("attendance").insert([{
+   roll:val("attStudentPicker"),
+   att_date:val("attDate"),
+   status:val("attStatus"),
+   remarks:val("attRemarks")
+ }]);
+
+ toast("Attendance Saved");
+};
+
+/* ---------- TAB FIX ---------- */
+const oldShowTab=window.showTab;
+
+window.showTab=async function(name,btn){
+ oldShowTab(name,btn);
+
+ if(name==="notices"){
+   await fetchNotices();
+   renderNoticeLists();
+ }
+
+ if(name==="assignments"){
+   await fetchAssignments();
+   renderAssignTable();
+ }
+
+ if(name==="attendance"){
+   await fetchAttendance();
+ }
+
+ fetchDashboardStats();
+};
+
+/* ---------- LOAD ---------- */
+window.addEventListener("load",async()=>{
+ if(!STATE.loggedIn)return;
+
+ await fetchNotices();
+ await fetchAssignments();
+ await fetchAttendance();
+
+ renderNoticeLists();
+ renderAssignTable();
+ fetchDashboardStats();
 });
-
-/* improve tab switching */
-const oldShowTab = window.showTab;
-
-window.showTab = async function(name, btn) {
-  oldShowTab(name, btn);
-
-  if (name === "notices") {
-    await fetchNotices();
-    renderNoticeLists();
-  }
-
-  if (name === "assignments") {
-    await fetchAssignments();
-    renderAssignTable();
-  }
-
-  if (name === "attendance") {
-    await fetchAttendance();
-  }
-
-  fetchDashboardStats();
-};
-/* ===============================
-   END OF FILE
-=============================== */
