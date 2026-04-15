@@ -364,8 +364,20 @@ window.editStudent = function (roll) {
 // -------------------
 async function updateStudent(oldRoll) {
   try {
+    const newRoll = val('s_roll');
+
+    // check duplicate except current row
+    const exists = STATE.students.find(
+      x => x.roll == newRoll && x.roll != oldRoll
+    );
+
+    if (exists) {
+      toast('Roll already exists', 'error');
+      return;
+    }
+
     const payload = {
-      roll: val('s_roll'),
+      roll: newRoll,
       password: val('s_pass'),
       name: val('s_name'),
       class: val('s_class'),
@@ -375,7 +387,8 @@ async function updateStudent(oldRoll) {
       email: val('s_email'),
       father_name: val('s_father'),
       father_phone: val('s_fphone'),
-      address: val('s_addr')
+      address: val('s_addr'),
+      session: '2025-26'
     };
 
     const { error } = await supabaseClient
@@ -390,10 +403,12 @@ async function updateStudent(oldRoll) {
     closeModal('studentModal');
     clearStudentForm();
     resetStudentBtn();
+
     loadStudents();
 
   } catch (err) {
-    toast('Update failed', 'error');
+    console.error(err);
+    toast(err.message || 'Update failed', 'error');
   }
 }
 
