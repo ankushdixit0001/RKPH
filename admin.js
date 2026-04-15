@@ -1,246 +1,299 @@
 /* =====================================================
-   RKPH ERP ADMIN PANEL — CLEAN FINAL admin.js
-   Stable Login + Session + Dashboard + CRUD Base
+   RKPH ERP ADMIN PANEL — PREMIUM FINAL admin.js
+   PART 1 : Core + Login + Tabs + Toast + Dashboard
 ===================================================== */
-'use strict';
 
-/* =========================================
+/* ===============================
    SUPABASE CONFIG
-========================================= */
-const SUPABASE_URL = 'https://xkmgugmhfmilgccwpqbi.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_xGQ5xycskcU8MaabewpWYw_ZLqxbgZ7';
+=============================== */
+const SUPABASE_URL = "https://xkmgugmhfmilgccwpqbi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_xGQ5xycskcU8MaabewpWYw_ZLqxbgZ7";
 
-const supabaseClient = supabase.createClient(
+const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  SUPABASE_KEY
 );
 
-/* =========================================
+/* ===============================
    GLOBAL STATE
-========================================= */
+=============================== */
 const STATE = {
-  admin: null,
   loggedIn: false,
   students: [],
   results: [],
   fees: [],
-  attendance: []
+  attendance: [],
+  notices: [],
+  assignments: []
 };
 
-/* =========================================
-   INIT
-========================================= */
-document.addEventListener('DOMContentLoaded', initApp);
-
-function initApp() {
-  bindUI();
-  bindModals();
-  restoreSession();
+/* ===============================
+   HELPERS
+=============================== */
+function byId(id) {
+  return document.getElementById(id);
 }
 
-/* =========================================
-   UI BINDINGS
-========================================= */
-function bindUI() {
-  const user = document.getElementById('loginUser');
-  const pass = document.getElementById('loginPwd');
-
-  if (user) {
-    user.addEventListener('keydown', e => {
-      if (e.key === 'Enter') adminLogin();
-    });
-  }
-
-  if (pass) {
-    pass.addEventListener('keydown', e => {
-      if (e.key === 'Enter') adminLogin();
-    });
-  }
+function val(id) {
+  const el = byId(id);
+  return el ? el.value.trim() : "";
 }
 
-function bindModals() {
-  document.querySelectorAll('.modal-overlay').forEach(modal => {
-    modal.addEventListener('click', e => {
-      if (e.target === modal) modal.classList.remove('open');
+function setVal(id, value) {
+  const el = byId(id);
+  if (el) el.value = value || "";
+}
+
+function setText(id, txt) {
+  const el = byId(id);
+  if (el) el.textContent = txt;
+}
+
+/* ===============================
+   TOAST
+=============================== */
+window.toast = function (msg, type = "success") {
+  const box = byId("adminToast");
+  if (!box) return;
+
+  box.innerHTML = `
+    <div style="
+      background:${type === "error" ? "#ef4444" : "#14b8a6"};
+      color:white;
+      padding:12px 18px;
+      border-radius:12px;
+      min-width:220px;
+      box-shadow:0 15px 35px rgba(0,0,0,.18);
+      font-weight:600;
+      animation:fadeIn .25s ease;
+    ">
+      ${msg}
+    </div>
+  `;
+
+  setTimeout(() => {
+    box.innerHTML = "";
+  }, 2500);
+};
+
+/* ===============================
+   LOGIN SYSTEM
+=============================== */
+const ADMIN_CREDENTIALS = {
+  username: "admin",
+  password: "rkph@admin2025"
+};
+
+window.doAdminLogin = function () {
+  const user = val("loginUser");
+  const pwd = val("loginPwd");
+
+  if (
+    user === ADMIN_CREDENTIALS.username &&
+    pwd === ADMIN_CREDENTIALS.password
+  ) {
+    STATE.loggedIn = true;
+    localStorage.setItem("rkph_admin_login", "1");
+
+    byId("loginScreen").style.display = "none";
+    byId("app").style.display = "flex";
+
+    loadDashboard();
+    toast("Login successful");
+
+  } else {
+    setText("loginErr", "Invalid username or password");
+    toast("Login failed", "error");
+  }
+};
+
+window.doLogout = function () {
+  localStorage.removeItem("rkph_admin_login");
+  location.reload();
+};
+
+/* ===============================
+   SESSION RESTORE
+=============================== */
+(function restoreSession() {
+  const ok = localStorage.getItem("rkph_admin_login");
+
+  if (ok === "1") {
+    STATE.loggedIn = true;
+
+    window.addEventListener("load", () => {
+      byId("loginScreen").style.display = "none";
+      byId("app").style.display = "flex";
+      loadDashboard();
     });
+  }
+})();
+
+/* ===============================
+   TAB SYSTEM
+=============================== */
+window.showTab = function (name, btn) {
+  document.querySelectorAll(".tab").forEach(el => {
+    el.classList.remove("active");
   });
-}
 
-/* =========================================
-   SESSION
-========================================= */
-function restoreSession() {
-  try {
-    const saved = localStorage.getItem('rkph_admin');
-    if (!saved) {
-      showLogin();
-      return;
-    }
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.remove("active");
+  });
 
-    STATE.admin = JSON.parse(saved);
-    STATE.loggedIn = true;
+  const tab = byId("tab-" + name);
+  if (tab) tab.classList.add("active");
 
-    showDashboard();
-    loadDashboard();
+  if (btn) btn.classList.add("active");
+};
 
-  } catch (err) {
-    localStorage.removeItem('rkph_admin');
-    showLogin();
-  }
-}
+/* ===============================
+   MODAL SYSTEM
+=============================== */
+window.openModal = function (id) {
+  const el = byId(id);
+  if (el) el.classList.add("open");
+};
 
-/* =========================================
-   LOGIN
-========================================= */
-function adminLogin() {
-  const user = val('loginUser');
-  const pass = val('loginPwd');
-  const err = document.getElementById('loginErr');
+window.closeModal = function (id) {
+  const el = byId(id);
+  if (el) el.classList.remove("open");
+};
 
-  if (!user || !pass) {
-    setErr('Enter username & password');
-    return false;
-  }
-
-  if (user === 'admin' && pass === 'rkph@admin2025') {
-    STATE.loggedIn = true;
-    STATE.admin = { name: 'Administrator' };
-
-    localStorage.setItem(
-      'rkph_admin',
-      JSON.stringify(STATE.admin)
-    );
-
-    clearErr();
-    showDashboard();
-
-    toast('Login Successful', 'success');
-
-    loadDashboard();
-    return true;
-  }
-
-  setErr('Invalid username or password');
-  toast('Invalid Login', 'error');
-  return false;
-
-  function setErr(msg) {
-    if (err) err.innerText = msg;
-  }
-
-  function clearErr() {
-    if (err) err.innerText = '';
-  }
-}
-
-window.doAdminLogin = adminLogin;
-
-/* =========================================
-   LOGOUT
-========================================= */
-function adminLogout() {
-  STATE.loggedIn = false;
-  STATE.admin = null;
-
-  localStorage.removeItem('rkph_admin');
-
-  showLogin();
-  toast('Logged out', 'info');
-}
-
-window.doLogout = adminLogout;
-
-/* =========================================
-   SCREEN CONTROL
-========================================= */
-function showLogin() {
-  const login = document.getElementById('loginScreen');
-  const app = document.getElementById('app');
-
-  if (login) login.style.display = 'flex';
-  if (app) app.style.display = 'none';
-}
-
-function showDashboard() {
-  const login = document.getElementById('loginScreen');
-  const app = document.getElementById('app');
-
-  if (login) login.style.display = 'none';
-  if (app) app.style.display = 'block';
-}
-
-/* =========================================
+/* ===============================
    DASHBOARD LOAD
-========================================= */
+=============================== */
 async function loadDashboard() {
-  await Promise.allSettled([
-    fetchDashboardStats(),
-    loadStudents(),
-    loadResults(),
-    loadFees(),
-    loadAttendance()
+  await Promise.all([
+    fetchStudents(),
+    fetchResults(),
+    fetchFees()
   ]);
+
+  fetchDashboardStats();
 }
 
-/* =========================================
-   STATS
-========================================= */
-async function fetchDashboardStats() {
-  try {
-    const [
-      students,
-      results,
-      fees,
-      attendance
-    ] = await Promise.all([
-      supabaseClient.from('students').select('*', { count: 'exact', head: true }),
-      supabaseClient.from('results').select('*', { count: 'exact', head: true }),
-      supabaseClient.from('fees').select('*', { count: 'exact', head: true }),
-      supabaseClient.from('attendance').select('*', { count: 'exact', head: true })
-    ]);
+/* ===============================
+   FETCH DATA
+=============================== */
+async function fetchStudents() {
+  const { data } = await supabaseClient
+    .from("students")
+    .select("*")
+    .order("roll");
 
-    setText('dash-students', students.count || 0);
-    setText('dash-results', results.count || 0);
-    setText('dash-notices', fees.count || 0);
-    setText('dash-assigns', attendance.count || 0);
+  STATE.students = data || [];
+}
 
-  } catch (err) {
-    console.error(err);
+async function fetchResults() {
+  const { data } = await supabaseClient
+    .from("results")
+    .select("*");
+
+  STATE.results = data || [];
+}
+
+async function fetchFees() {
+  const { data } = await supabaseClient
+    .from("fees")
+    .select("*");
+
+  STATE.fees = data || [];
+}
+
+/* ===============================
+   DASHBOARD STATS
+=============================== */
+window.fetchDashboardStats = function () {
+  setText("dash-students", STATE.students.length);
+  setText("dash-results", STATE.results.length);
+  setText("dash-notices", STATE.notices.length);
+  setText("dash-assigns", STATE.assignments.length);
+
+  renderDashboardLists();
+};
+
+function renderDashboardLists() {
+  const nBox = byId("dash-notice-list");
+  const aBox = byId("dash-assign-list");
+
+  if (nBox) {
+    nBox.innerHTML = STATE.notices.length
+      ? STATE.notices.slice(0, 5).map(x =>
+          `<div class="mini-pill">${x.title}</div>`
+        ).join("")
+      : `<div style="color:#94a3b8">No notices</div>`;
+  }
+
+  if (aBox) {
+    aBox.innerHTML = STATE.assignments.length
+      ? STATE.assignments.slice(0, 5).map(x =>
+          `<div class="mini-pill">${x.title}</div>`
+        ).join("")
+      : `<div style="color:#94a3b8">No assignments</div>`;
   }
 }
 
-// ================================
-// STUDENT MANAGEMENT FINAL MODULE
-// ================================
-
-async function loadStudents() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('students')
-      .select('*')
-      .order('roll', { ascending: true });
-
-    if (error) throw error;
-
-    STATE.students = data || [];
-    renderStudentTable();
-
-  } catch (err) {
-    console.error(err);
-    toast('Failed to load students', 'error');
+/* ===============================
+   READY
+=============================== */
+window.addEventListener("load", () => {
+  if (!STATE.loggedIn) {
+    byId("app").style.display = "none";
   }
+});
+
+/* =====================================================
+   RKPH ERP ADMIN PANEL — PREMIUM FINAL admin.js
+   PART 2 : Student Management (Exact Final Version)
+===================================================== */
+
+/* ===============================
+   STUDENT TABLE LOAD
+=============================== */
+window.loadStudents = async function () {
+  await fetchStudents();
+  renderStudentFilters();
+  renderStudentTable();
+  fetchDashboardStats();
+};
+
+/* ===============================
+   FILTER DROPDOWNS
+=============================== */
+function renderStudentFilters() {
+  const classSel = byId("stuFilterClass");
+  const streamSel = byId("stuFilterStream");
+
+  if (!classSel || !streamSel) return;
+
+  const classes = [...new Set(
+    STATE.students.map(x => x.class).filter(Boolean)
+  )].sort();
+
+  const streams = [...new Set(
+    STATE.students.map(x => x.stream).filter(Boolean)
+  )].sort();
+
+  classSel.innerHTML =
+    `<option value="">All Classes</option>` +
+    classes.map(c => `<option>${c}</option>`).join("");
+
+  streamSel.innerHTML =
+    `<option value="">All Streams</option>` +
+    streams.map(s => `<option>${s}</option>`).join("");
 }
 
-// -------------------
-// Render Table
-// -------------------
-function renderStudentTable() {
-  const tbody = document.getElementById('studentTbody');
+/* ===============================
+   RENDER TABLE
+=============================== */
+window.renderStudentTable = function () {
+  const tbody = byId("studentTbody");
   if (!tbody) return;
 
-  const search = val('stuSearch').toLowerCase();
-  const cls = val('stuFilterClass');
-  const stream = val('stuFilterStream');
+  const search = val("stuSearch").toLowerCase();
+  const cls = val("stuFilterClass");
+  const stream = val("stuFilterStream");
 
   let rows = [...STATE.students];
 
@@ -251,873 +304,343 @@ function renderStudentTable() {
     );
   }
 
-  if (cls) rows = rows.filter(st => st.class == cls);
-  if (stream) rows = rows.filter(st => st.stream == stream);
+  if (cls) rows = rows.filter(st => st.class === cls);
+  if (stream) rows = rows.filter(st => st.stream === stream);
+
+  setText("stuCount", `${rows.length} Students`);
 
   if (!rows.length) {
-    tbody.innerHTML =
-      `<tr><td colspan="9">No students found</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align:center;padding:24px">
+          No students found
+        </td>
+      </tr>
+    `;
     return;
   }
 
   tbody.innerHTML = rows.map(st => `
     <tr>
-      <td>${st.roll}</td>
-      <td>${st.name}</td>
-      <td>${st.class}</td>
-      <td>${st.stream || '-'}</td>
-      <td>${st.section || '-'}</td>
-      <td>${st.session || '-'}</td>
-      <td>${st.phone || '-'}</td>
-      <td>${st.father_name || '-'}</td>
-      <td>
+      <td>${st.roll || "-"}</td>
+      <td>${st.name || "-"}</td>
+      <td>${st.class || "-"}</td>
+      <td>${st.stream || "-"}</td>
+      <td>${st.section || "-"}</td>
+      <td>${st.session || "-"}</td>
+      <td>${st.phone || "-"}</td>
+      <td>${st.father_name || "-"}</td>
+      <td style="white-space:nowrap">
         <button onclick="editStudent('${st.roll}')">Edit</button>
         <button onclick="deleteStudent('${st.roll}')">Delete</button>
       </td>
     </tr>
-  `).join('');
+  `).join("");
+};
 
-  setText('stuCount', `${rows.length} Students`);
-}
+/* ===============================
+   OPEN MODAL
+=============================== */
+window.openStudentModal = function () {
+  clearStudentForm();
+  resetStudentBtn();
 
-// -------------------
-// Add Student
-// -------------------
+  setText("studentModalTitle", "Add Student");
+  openModal("studentModal");
+};
+
+/* ===============================
+   SAVE ROUTER
+=============================== */
+window.saveStudent = function () {
+  const btn = byId("addStudentBtn");
+
+  if (btn.dataset.mode === "edit") {
+    updateStudent(btn.dataset.oldRoll);
+  } else {
+    addStudent();
+  }
+};
+
+/* ===============================
+   ADD STUDENT
+=============================== */
 async function addStudent() {
   try {
-    const roll = val('s_roll');
+    const roll = val("s_roll");
 
-    // Duplicate check
-    const exists = STATE.students.find(x => x.roll == roll);
-    if (exists) {
-      toast('Roll number already exists', 'error');
+    const duplicate = STATE.students.find(
+      x => x.roll == roll
+    );
+
+    if (duplicate) {
+      toast("Roll number already exists", "error");
       return;
     }
 
     const payload = {
-      roll,
-      password: val('s_pass'),
-      name: val('s_name'),
-      class: val('s_class'),
-      section: val('s_section'),
-      stream: val('s_stream'),
-      session: '2025-26',
-      phone: val('s_phone'),
-      email: val('s_email'),
-      father_name: val('s_father'),
-      father_phone: val('s_fphone'),
-      address: val('s_addr')
+      roll: roll,
+      password: val("s_pass"),
+      name: val("s_name"),
+      class: val("s_class"),
+      stream: val("s_stream"),
+      section: val("s_section"),
+      session: val("s_session"),
+      phone: val("s_phone"),
+      email: val("s_email"),
+      father_name: val("s_father"),
+      father_phone: val("s_fphone"),
+      address: val("s_addr")
     };
 
     if (!payload.roll || !payload.name) {
-      toast('Roll & Name required', 'error');
+      toast("Roll & Name required", "error");
       return;
     }
 
     const { error } = await supabaseClient
-      .from('students')
+      .from("students")
       .insert([payload]);
 
     if (error) throw error;
 
-    toast('Student Added', 'success');
+    toast("Student Added");
+    closeModal("studentModal");
 
-    closeModal('studentModal');
+    await loadStudents();
     clearStudentForm();
-    loadStudents();
-    fetchDashboardStats();
 
   } catch (err) {
     console.error(err);
-    toast('Failed to add student', 'error');
+    toast(err.message || "Add failed", "error");
   }
 }
 
-// -------------------
-// Edit Student
-// -------------------
+/* ===============================
+   EDIT STUDENT
+=============================== */
 window.editStudent = function (roll) {
-  const st = STATE.students.find(x => x.roll == roll);
+  const st = STATE.students.find(
+    x => x.roll == roll
+  );
+
   if (!st) return;
 
-  setVal('s_roll', st.roll);
-  setVal('s_pass', st.password);
-  setVal('s_name', st.name);
-  setVal('s_class', st.class);
-  setVal('s_section', st.section);
-  setVal('s_stream', st.stream);
-  setVal('s_phone', st.phone);
-  setVal('s_email', st.email);
-  setVal('s_father', st.father_name);
-  setVal('s_fphone', st.father_phone);
-  setVal('s_addr', st.address);
+  setVal("s_roll", st.roll);
+  setVal("s_pass", st.password);
+  setVal("s_name", st.name);
+  setVal("s_class", st.class);
+  setVal("s_stream", st.stream);
+  setVal("s_section", st.section);
+  setVal("s_session", st.session);
+  setVal("s_phone", st.phone);
+  setVal("s_email", st.email);
+  setVal("s_father", st.father_name);
+  setVal("s_fphone", st.father_phone);
+  setVal("s_addr", st.address);
 
-  const btn = document.getElementById('addStudentBtn');
-  btn.innerText = 'Update Student';
-  btn.onclick = () => updateStudent(roll);
+  const btn = byId("addStudentBtn");
 
-  openModal('studentModal');
+  btn.dataset.mode = "edit";
+  btn.dataset.oldRoll = roll;
+  btn.innerHTML =
+    `<i class="fas fa-save"></i> Update Student`;
+
+  setText("studentModalTitle", "Edit Student");
+
+  openModal("studentModal");
 };
 
-// -------------------
-// Update Student
-// -------------------
+/* ===============================
+   UPDATE STUDENT
+=============================== */
 async function updateStudent(oldRoll) {
   try {
-    const newRoll = val('s_roll');
+    const newRoll = val("s_roll");
 
-    // check duplicate except current row
-    const exists = STATE.students.find(
-      x => x.roll == newRoll && x.roll != oldRoll
+    const duplicate = STATE.students.find(
+      x => x.roll == newRoll &&
+      x.roll != oldRoll
     );
 
-    if (exists) {
-      toast('Roll already exists', 'error');
+    if (duplicate) {
+      toast("Roll number already exists", "error");
       return;
     }
 
     const payload = {
       roll: newRoll,
-      password: val('s_pass'),
-      name: val('s_name'),
-      class: val('s_class'),
-      section: val('s_section'),
-      stream: val('s_stream'),
-      phone: val('s_phone'),
-      email: val('s_email'),
-      father_name: val('s_father'),
-      father_phone: val('s_fphone'),
-      address: val('s_addr'),
-      session: '2025-26'
+      password: val("s_pass"),
+      name: val("s_name"),
+      class: val("s_class"),
+      stream: val("s_stream"),
+      section: val("s_section"),
+      session: val("s_session"),
+      phone: val("s_phone"),
+      email: val("s_email"),
+      father_name: val("s_father"),
+      father_phone: val("s_fphone"),
+      address: val("s_addr")
     };
 
     const { error } = await supabaseClient
-      .from('students')
+      .from("students")
       .update(payload)
-      .eq('roll', oldRoll);
+      .eq("roll", oldRoll);
 
     if (error) throw error;
 
-    toast('Student Updated', 'success');
+    toast("Student Updated");
 
-    closeModal('studentModal');
+    closeModal("studentModal");
     clearStudentForm();
     resetStudentBtn();
 
-    loadStudents();
+    await loadStudents();
 
   } catch (err) {
     console.error(err);
-    toast(err.message || 'Update failed', 'error');
+    toast(err.message || "Update failed", "error");
   }
 }
 
-// -------------------
-// Delete Student
-// -------------------
+/* ===============================
+   DELETE STUDENT
+=============================== */
 window.deleteStudent = async function (roll) {
-  if (!confirm(`Delete student ${roll}?`)) return;
+  if (!confirm(`Delete ${roll}?`)) return;
 
-  try {
-    const { error } = await supabaseClient
-      .from('students')
-      .delete()
-      .eq('roll', roll);
+  const { error } = await supabaseClient
+    .from("students")
+    .delete()
+    .eq("roll", roll);
 
-    if (error) throw error;
-
-    toast('Deleted', 'success');
-
-    loadStudents();
-    fetchDashboardStats();
-
-  } catch (err) {
-    toast('Delete failed', 'error');
+  if (error) {
+    toast("Delete failed", "error");
+    return;
   }
+
+  toast("Student Deleted");
+  await loadStudents();
 };
 
-// -------------------
-// Reset Button
-// -------------------
+/* ===============================
+   RESET BUTTON
+=============================== */
 function resetStudentBtn() {
-  const btn = document.getElementById('addStudentBtn');
-  btn.innerText = 'Add Student';
-  btn.onclick = addStudent;
+  const btn = byId("addStudentBtn");
+
+  btn.dataset.mode = "add";
+  btn.dataset.oldRoll = "";
+  btn.innerHTML =
+    `<i class="fas fa-save"></i> Save Student`;
 }
 
-/* =========================================
-   RESULTS
-========================================= */
-async function loadResults() {
-  try {
-    const { data } = await supabaseClient
-      .from('results')
-      .select('*')
-      .order('id', { ascending: false });
-
-    STATE.results = data || [];
-  } catch (err) {}
-}
-
-/* =========================================
-   FEES
-========================================= */
-async function loadFees() {
-  try {
-    const { data } = await supabaseClient
-      .from('fees')
-      .select('*')
-      .order('id', { ascending: false });
-
-    STATE.fees = data || [];
-  } catch (err) {}
-}
-
-/* =========================================
-   ATTENDANCE
-========================================= */
-async function loadAttendance() {
-  try {
-    const { data } = await supabaseClient
-      .from('attendance')
-      .select('*')
-      .order('date', { ascending: false });
-
-    STATE.attendance = data || [];
-  } catch (err) {}
-}
-
-/* =========================================
-   TABS
-========================================= */
-window.showTab = function (name, el) {
-  document.querySelectorAll('.tab')
-    .forEach(x => x.classList.remove('active'));
-
-  document.querySelectorAll('.nav-item')
-    .forEach(x => x.classList.remove('active'));
-
-  const tab = document.getElementById('tab-' + name);
-  if (tab) tab.classList.add('active');
-
-  if (el) el.classList.add('active');
-
-  if (name === 'students') loadStudents();
-  if (name === 'marks') loadResults();
-  if (name === 'fees') loadFees();
-  if (name === 'attendance') loadAttendance();
-};
-
-/* =========================================
-   MODALS
-========================================= */
-window.openModal = id => {
-  const el = document.getElementById(id);
-  if (el) el.classList.add('open');
-};
-
-window.closeModal = id => {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('open');
-};
-
-/* =========================================
-   HELPERS
-========================================= */
-function val(id) {
-  return document.getElementById(id)?.value.trim() || '';
-}
-
-function setText(id, txt) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = txt;
-}
-
+/* ===============================
+   CLEAR FORM
+=============================== */
 function clearStudentForm() {
   [
-    's_roll','s_pass','s_name','s_class',
-    's_section','s_stream','s_phone',
-    's_email','s_father','s_fphone','s_addr'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+    "s_roll","s_pass","s_name","s_stream",
+    "s_section","s_session","s_phone",
+    "s_email","s_father","s_fphone",
+    "s_addr"
+  ].forEach(id => setVal(id, ""));
+
+  setVal("s_class", "Class 9");
 }
 
-/* =========================================
-   TOAST
-========================================= */
-function toast(msg, type = 'info') {
-  const box = document.createElement('div');
-  box.className = `toast toast-${type}`;
-  box.innerText = msg;
-
-  document.body.appendChild(box);
-
-  setTimeout(() => box.classList.add('show'), 100);
-  setTimeout(() => box.remove(), 3000);
-}
-
+/* ===============================
+   AUTO LOAD
+=============================== */
+window.addEventListener("load", () => {
+  if (STATE.loggedIn) loadStudents();
+});
 /* =====================================================
-   RKPH ERP ADMIN PANEL — CLEAN FINAL admin.js
-   PART 2 : Edit + Search + Results + Fees + Attendance
+   RKPH ERP ADMIN PANEL — PREMIUM FINAL admin.js
+   PART 3 : Marks / Results Module (Exact HTML IDs)
 ===================================================== */
 
-/* =========================================
-   SEARCH STUDENTS
-========================================= */
-window.renderStudentTable = function () {
-  const search = val('stuSearch').toLowerCase();
-  const cls = val('stuFilterClass');
-  const stream = val('stuFilterStream');
-
-  let rows = [...STATE.students];
-
-  if (search) {
-    rows = rows.filter(st =>
-      String(st.roll).toLowerCase().includes(search) ||
-      String(st.name).toLowerCase().includes(search)
-    );
-  }
-
-  if (cls) {
-    rows = rows.filter(st => String(st.class) === cls);
-  }
-
-  if (stream) {
-    rows = rows.filter(st => String(st.stream) === stream);
-  }
-
-  const tbody = document.getElementById('studentTbody');
-  if (!tbody) return;
-
-  if (!rows.length) {
-    tbody.innerHTML = `
-      <tr><td colspan="9">No students found</td></tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = rows.map(st => `
-    <tr>
-      <td>${st.roll || ''}</td>
-      <td>${st.name || ''}</td>
-      <td>${st.class || ''}</td>
-      <td>${st.stream || '-'}</td>
-      <td>${st.section || '-'}</td>
-      <td>${st.session || '-'}</td>
-      <td>${st.phone || '-'}</td>
-      <td>${st.father_name || '-'}</td>
-      <td>
-        <button onclick="editStudent('${st.roll}')">Edit</button>
-        <button onclick="deleteStudent('${st.roll}')">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-
-  setText('stuCount', `${rows.length} Students`);
+/* ===============================
+   LOAD RESULTS
+=============================== */
+window.loadResults = async function () {
+  await fetchResults();
+  renderMarksFilters();
+  renderMarksTable();
+  fetchDashboardStats();
 };
 
-/* =========================================
-   EDIT STUDENT
-========================================= */
-window.editStudent = function (roll) {
-  const st = STATE.students.find(x => x.roll == roll);
-  if (!st) return;
+/* ===============================
+   FILTERS
+=============================== */
+function renderMarksFilters() {
+  const clsSel = byId("marksFilterClass");
+  if (!clsSel) return;
 
-  setVal('s_roll', st.roll);
-  setVal('s_pass', st.password);
-  setVal('s_name', st.name);
-  setVal('s_class', st.class);
-  setVal('s_section', st.section);
-  setVal('s_stream', st.stream);
-  setVal('s_phone', st.phone);
-  setVal('s_email', st.email);
-  setVal('s_father', st.father_name);
-  setVal('s_fphone', st.father_phone);
-  setVal('s_addr', st.address);
+  const classes = [...new Set(
+    STATE.students.map(x => x.class).filter(Boolean)
+  )].sort();
 
-  const btn = document.getElementById('addStudentBtn');
-  if (btn) {
-    btn.innerText = 'Update Student';
-    btn.onclick = () => updateStudent(roll);
-  }
+  clsSel.innerHTML =
+    `<option value="">All Classes</option>` +
+    classes.map(c => `<option>${c}</option>`).join("");
 
-  openModal('studentModal');
-};
-
-async function updateStudent(oldRoll) {
-  try {
-    const payload = {
-      roll: val('s_roll'),
-      password: val('s_pass'),
-      name: val('s_name'),
-      class: val('s_class'),
-      section: val('s_section'),
-      stream: val('s_stream'),
-      phone: val('s_phone'),
-      email: val('s_email'),
-      father_name: val('s_father'),
-      father_phone: val('s_fphone'),
-      address: val('s_addr')
-    };
-
-    const { error } = await supabaseClient
-      .from('students')
-      .update(payload)
-      .eq('roll', oldRoll);
-
-    if (error) throw error;
-
-    toast('Student Updated', 'success');
-    closeModal('studentModal');
-    clearStudentForm();
-    resetStudentBtn();
-
-    loadStudents();
-
-  } catch (err) {
-    toast('Update failed', 'error');
-  }
+  renderRollDropdown();
 }
 
-function resetStudentBtn() {
-  const btn = document.getElementById('addStudentBtn');
-  if (!btn) return;
+/* ===============================
+   STUDENT ROLL DROPDOWN
+=============================== */
+function renderRollDropdown() {
+  const rollSel = byId("m_roll");
+  if (!rollSel) return;
 
-  btn.innerText = 'Add Student';
-  btn.onclick = addStudent;
+  rollSel.innerHTML =
+    `<option value="">Select Roll</option>` +
+    STATE.students.map(st =>
+      `<option value="${st.roll}">
+        ${st.roll} — ${st.name}
+      </option>`
+    ).join("");
 }
 
-/* =========================================
-   RESULTS MODULE
-========================================= */
-window.renderMarksTable = function () {
-  const tbody = document.getElementById('marksTbody');
-  if (!tbody) return;
-
-  if (!STATE.results.length) {
-    tbody.innerHTML = `
-      <tr><td colspan="8">No results found</td></tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = STATE.results.map(r => {
-    const percent =
-      r.max_marks > 0
-        ? ((r.marks / r.max_marks) * 100).toFixed(1)
-        : 0;
-
-    return `
-      <tr>
-        <td>${r.roll}</td>
-        <td>${r.class || '-'}</td>
-        <td>${r.session || '-'}</td>
-        <td>${r.exam}</td>
-        <td>${r.marks}/${r.max_marks}</td>
-        <td>${percent}%</td>
-        <td>${r.grade || '-'}</td>
-        <td>
-          <button onclick="deleteResult(${r.id})">Delete</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-};
-
-window.saveMarks = async function () {
-  try {
-    const payload = {
-      roll: val('res_roll'),
-      exam: val('res_exam'),
-      subject: val('res_subject'),
-      marks: Number(val('res_marks')),
-      max_marks: Number(val('res_max_marks')),
-      grade: val('res_grade')
-    };
-
-    const { error } = await supabaseClient
-      .from('results')
-      .insert([payload]);
-
-    if (error) throw error;
-
-    toast('Result Added', 'success');
-    closeModal('marksModal');
-
-    loadResults();
-    fetchDashboardStats();
-
-  } catch (err) {
-    toast('Save failed', 'error');
-  }
-};
-
-window.deleteResult = async function (id) {
-  if (!confirm('Delete result?')) return;
-
-  try {
-    await supabaseClient
-      .from('results')
-      .delete()
-      .eq('id', id);
-
-    loadResults();
-    fetchDashboardStats();
-
-    toast('Deleted', 'success');
-
-  } catch (err) {
-    toast('Delete failed', 'error');
-  }
-};
-
-/* =========================================
-   FEES MODULE
-========================================= */
-window.renderFeeTable = function () {
-  const tbody = document.getElementById('feeTbody');
-  if (!tbody) return;
-
-  if (!STATE.fees.length) {
-    tbody.innerHTML = `
-      <tr><td colspan="7">No fee records found</td></tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = STATE.fees.map(f => `
-    <tr>
-      <td>${f.quarter || '-'}</td>
-      <td>${f.type || '-'}</td>
-      <td>₹${f.amount || 0}</td>
-      <td>${f.due_date || '-'}</td>
-      <td>${f.paid_on || '-'}</td>
-      <td>${f.status || '-'}</td>
-      <td>
-        <button onclick="deleteFee(${f.id})">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-};
-
-window.saveFee = async function () {
-  try {
-    const payload = {
-      roll: val('fee_roll'),
-      amount: Number(val('fee_amount')),
-      status: val('fee_status'),
-      date: val('fee_date')
-    };
-
-    const { error } = await supabaseClient
-      .from('fees')
-      .insert([payload]);
-
-    if (error) throw error;
-
-    toast('Fee Added', 'success');
-    closeModal('feeModal');
-
-    loadFees();
-    fetchDashboardStats();
-
-  } catch (err) {
-    toast('Save failed', 'error');
-  }
-};
-
-window.deleteFee = async function (id) {
-  if (!confirm('Delete fee record?')) return;
-
-  try {
-    await supabaseClient
-      .from('fees')
-      .delete()
-      .eq('id', id);
-
-    loadFees();
-    fetchDashboardStats();
-
-    toast('Deleted', 'success');
-
-  } catch (err) {
-    toast('Delete failed', 'error');
-  }
-};
-
-/* =========================================
-   ATTENDANCE MODULE
-========================================= */
-window.renderAttendance = function () {
-  const box = document.getElementById('attEditorWrap');
-  if (!box) return;
-
-  if (!STATE.attendance.length) {
-    box.innerHTML = `
-      <div style="padding:30px;text-align:center">
-        No attendance records
-      </div>
-    `;
-    return;
-  }
-
-  box.innerHTML = `
-    <table class="admin-tbl">
-      <thead>
-        <tr>
-          <th>Roll</th>
-          <th>Date</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${STATE.attendance.map(a => `
-          <tr>
-            <td>${a.roll}</td>
-            <td>${a.date}</td>
-            <td>${a.status}</td>
-            <td>
-              <button onclick="deleteAttendance(${a.id})">
-                Delete
-              </button>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-};
-
-window.deleteAttendance = async function (id) {
-  if (!confirm('Delete attendance?')) return;
-
-  try {
-    await supabaseClient
-      .from('attendance')
-      .delete()
-      .eq('id', id);
-
-    loadAttendance();
-    fetchDashboardStats();
-
-    toast('Deleted', 'success');
-
-  } catch (err) {
-    toast('Delete failed', 'error');
-  }
-};
-
-/* =========================================
-   HELPERS
-========================================= */
-function setVal(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.value = value || '';
-}
-
-/* =====================================================
-   RKPH ERP ADMIN PANEL — CLEAN FINAL admin.js
-   PART 3 : Notices + Assignments + Modals + Final Utils
-===================================================== */
-
-/* =========================================
-   NOTICE MODULE
-========================================= */
-window.saveNotice = function () {
-  const title = val('notice_title');
-  const msg = val('notice_message');
-
-  if (!title) {
-    toast('Enter notice title', 'error');
-    return;
-  }
-
-  toast('Notice Saved', 'success');
-  closeModal('noticeModal');
-
-  const tbody = document.getElementById('noticeTbody');
-  if (!tbody) return;
-
-  const row = document.createElement('tr');
-
-  row.innerHTML = `
-    <td>${title}</td>
-    <td>${msg || '-'}</td>
-    <td>${new Date().toLocaleDateString()}</td>
-    <td>
-      <button onclick="this.closest('tr').remove()">
-        Delete
-      </button>
-    </td>
-  `;
-
-  tbody.prepend(row);
-};
-
-/* =========================================
-   ASSIGNMENT MODULE
-========================================= */
-window.saveAssign = function () {
-  const subject = val('assign_subject');
-  const title = val('assign_title');
-
-  if (!subject) {
-    toast('Enter subject', 'error');
-    return;
-  }
-
-  toast('Assignment Saved', 'success');
-  closeModal('assignModal');
-
-  const tbody = document.getElementById('assignTbody');
-  if (!tbody) return;
-
-  const row = document.createElement('tr');
-
-  row.innerHTML = `
-    <td>${subject}</td>
-    <td>${title || '-'}</td>
-    <td>${val('assign_due') || '-'}</td>
-    <td>
-      <button onclick="this.closest('tr').remove()">
-        Delete
-      </button>
-    </td>
-  `;
-
-  tbody.prepend(row);
-};
-
-/* =========================================
-   EXAM MODULE
-========================================= */
-window.saveExam = function () {
-  const name = val('exam_name');
-
-  if (!name) {
-    toast('Enter exam name', 'error');
-    return;
-  }
-
-  toast('Exam Saved', 'success');
-  closeModal('examModal');
-
-  const tbody = document.getElementById('examTbody');
-  if (!tbody) return;
-
-  const row = document.createElement('tr');
-
-  row.innerHTML = `
-    <td>${name}</td>
-    <td>${val('exam_class') || '-'}</td>
-    <td>${val('exam_date') || '-'}</td>
-    <td>
-      <button onclick="this.closest('tr').remove()">
-        Delete
-      </button>
-    </td>
-  `;
-
-  tbody.prepend(row);
-};
-
-/* =========================================
-   OPEN MODALS
-========================================= */
-window.openStudentModal = function () {
-  clearStudentForm();
-  resetStudentBtn();
-
-  const title = document.getElementById('studentModalTitle');
-  if (title) title.innerText = 'Add Student';
-
-  openModal('studentModal');
-};
-
-window.openMarksModal = function () {
-  clearMarksForm();
-
-  const title = document.getElementById('marksModalTitle');
-  if (title) title.innerText = 'Add Result';
-
-  openModal('marksModal');
-};
-
-window.openNoticeModal = function () {
-  openModal('noticeModal');
-};
-
-window.openAssignModal = function () {
-  openModal('assignModal');
-};
-
-window.openFeeModal = function () {
-  openModal('feeModal');
-};
-
-window.openExamModal = function () {
-  openModal('examModal');
-};
-
-/* =========================================
-   FORM CLEAR
-========================================= */
-function clearMarksForm() {
-  [
-    'res_roll',
-    'res_exam',
-    'res_subject',
-    'res_marks',
-    'res_max_marks',
-    'res_grade'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-}
-
-/* =========================================
-   NOTICE TABS
-========================================= */
-window.switchNoticeTab = function (type, btn) {
-  document.querySelectorAll('.notice-tab')
-    .forEach(el => el.style.display = 'none');
-
-  const target = document.getElementById(
-    'ntab-' + type + '-content'
+/* ===============================
+   AUTO FILL CLASS / STREAM
+=============================== */
+window.autoFillClass = function () {
+  const roll = val("m_roll");
+
+  const st = STATE.students.find(
+    x => x.roll == roll
   );
 
-  if (target) target.style.display = 'block';
+  if (!st) return;
 
-  document.querySelectorAll('.notice-btn')
-    .forEach(x => x.classList.remove('active'));
-
-  if (btn) btn.classList.add('active');
+  setVal("m_cls", st.class || "");
+  setVal("m_stream", st.stream || "");
 };
 
-/* =========================================
-   SUBJECT ROWS
-========================================= */
+/* ===============================
+   SUBJECT ROW
+=============================== */
 window.addSubjectRow = function () {
-  const wrap = document.getElementById('marksSubjRows');
+  const wrap = byId("marksSubjRows");
   if (!wrap) return;
 
-  const row = document.createElement('div');
+  const row = document.createElement("div");
 
-  row.style.display = 'grid';
+  row.style.display = "grid";
   row.style.gridTemplateColumns =
-    '1fr 80px 80px 80px 90px';
-  row.style.gap = '8px';
-  row.style.marginBottom = '8px';
+    "1fr 80px 80px 70px 80px";
+  row.style.gap = "6px";
+  row.style.marginBottom = "8px";
 
   row.innerHTML = `
-    <input placeholder="Subject" class="f-input">
-    <input placeholder="Marks" class="f-input">
-    <input placeholder="Max" class="f-input">
-    <input placeholder="Grade" class="f-input">
+    <input class="f-input sbj-name" placeholder="Subject">
+    <input class="f-input sbj-max" type="number" value="100">
+    <input class="f-input sbj-obt" type="number" value="0">
+    <input class="f-input sbj-grade" placeholder="A">
     <button onclick="this.parentElement.remove()">
       Remove
     </button>
@@ -1126,472 +649,720 @@ window.addSubjectRow = function () {
   wrap.appendChild(row);
 };
 
-/* =========================================
-   TABLE FILTER PLACEHOLDERS
-========================================= */
-window.renderClassNotices = function () {};
-window.renderPrivateNotices = function () {};
-window.filterPrivateNoticeByClass = function () {};
-window.filterAssignByClass = function () {};
-window.renderAssignTable = function () {};
-window.filterAttByClass = function () {};
-window.renderTTEditor = function () {};
+/* ===============================
+   OPEN MODAL
+=============================== */
+window.openMarksModal = function () {
+  clearMarksForm();
+  setText("marksModalTitle", "Add Result");
 
-/* =========================================
-   OVERRIDE LOADERS TO AUTO RENDER
-========================================= */
-const _loadResults = loadResults;
-loadResults = async function () {
-  await _loadResults();
-  renderMarksTable();
+  if (!byId("marksSubjRows").children.length) {
+    addSubjectRow();
+  }
+
+  openModal("marksModal");
 };
 
-const _loadFees = loadFees;
-loadFees = async function () {
-  await _loadFees();
-  renderFeeTable();
+/* ===============================
+   SAVE MARKS
+=============================== */
+window.saveMarks = async function () {
+  try {
+    const roll = val("m_roll");
+    const exam = val("m_exam");
+
+    if (!roll || !exam) {
+      toast("Roll and Exam required", "error");
+      return;
+    }
+
+    const subjectRows = [
+      ...document.querySelectorAll(
+        "#marksSubjRows > div"
+      )
+    ];
+
+    let subjects = [];
+    let totalMax = 0;
+    let totalObt = 0;
+
+    subjectRows.forEach(row => {
+      const inputs = row.querySelectorAll("input");
+
+      const name = inputs[0].value.trim();
+      const max = Number(inputs[1].value || 0);
+      const obt = Number(inputs[2].value || 0);
+      const grade = inputs[3].value.trim();
+
+      if (name) {
+        subjects.push({
+          subject: name,
+          max_marks: max,
+          obtained: obt,
+          grade: grade
+        });
+
+        totalMax += max;
+        totalObt += obt;
+      }
+    });
+
+    const percent =
+      totalMax > 0
+        ? ((totalObt / totalMax) * 100).toFixed(2)
+        : 0;
+
+    const payload = {
+      roll: roll,
+      class: val("m_cls"),
+      stream: val("m_stream"),
+      exam: exam,
+      session: "2025-26",
+      total: totalObt,
+      max_total: totalMax,
+      percentage: percent,
+      grade: autoGrade(percent),
+      rank: val("m_rank"),
+      remarks: val("m_remarks"),
+      subjects: JSON.stringify(subjects)
+    };
+
+    const { error } = await supabaseClient
+      .from("results")
+      .insert([payload]);
+
+    if (error) throw error;
+
+    toast("Result Saved");
+
+    closeModal("marksModal");
+    clearMarksForm();
+
+    await loadResults();
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Save failed", "error");
+  }
 };
 
-const _loadAttendance = loadAttendance;
-loadAttendance = async function () {
-  await _loadAttendance();
-  renderAttendance();
-};
+/* ===============================
+   TABLE
+=============================== */
+window.renderMarksTable = function () {
+  const tbody = byId("marksTbody");
+  if (!tbody) return;
 
-const _loadStudents = loadStudents;
-loadStudents = async function () {
-  await _loadStudents();
-  renderStudentTable();
-};
+  const cls = val("marksFilterClass");
+  const sess = val("marksFilterSession");
 
-/* =========================================
-   GLOBAL SAVE STUDENT BUTTON
-========================================= */
-window.saveStudent = function () {
-  const btn = document.getElementById('addStudentBtn');
+  let rows = [...STATE.results];
 
-  if (btn && btn.innerText.includes('Update')) {
-    btn.click();
+  if (cls) rows = rows.filter(x => x.class == cls);
+  if (sess) rows = rows.filter(x => x.session == sess);
+
+  if (!rows.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="padding:24px;text-align:center">
+          No results found
+        </td>
+      </tr>
+    `;
     return;
   }
 
-  addStudent();
-  closeModal('studentModal');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.roll}</td>
+      <td>${r.class || "-"}</td>
+      <td>${r.session || "-"}</td>
+      <td>${r.exam || "-"}</td>
+      <td>${r.total || 0}</td>
+      <td>${r.percentage || 0}%</td>
+      <td>${r.grade || "-"}</td>
+      <td>
+        <button onclick="deleteResult('${r.id}')">
+          Delete
+        </button>
+      </td>
+    </tr>
+  `).join("");
 };
 
-/* =========================================
-   FINAL START
-========================================= */
-setTimeout(() => {
-  if (STATE.loggedIn) {
-    loadDashboard();
+/* ===============================
+   DELETE
+=============================== */
+window.deleteResult = async function (id) {
+  if (!confirm("Delete result?")) return;
+
+  const { error } = await supabaseClient
+    .from("results")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    toast("Delete failed", "error");
+    return;
   }
-}, 300);
 
-
-/* =====================================================
-   RKPH ERP ADMIN PANEL — CLEAN FINAL admin.js
-   PART 4 : Premium Final Patch + Error Safe + Polish
-===================================================== */
-
-/* =========================================
-   GLOBAL ERROR SAFETY
-========================================= */
-window.addEventListener('error', function (e) {
-  console.error('JS Error:', e.message);
-});
-
-window.addEventListener('unhandledrejection', function (e) {
-  console.error('Promise Error:', e.reason);
-});
-
-/* =========================================
-   SAFE TOAST STYLE PATCH
-========================================= */
-(function injectToastStyle() {
-  if (document.getElementById('toastPatch')) return;
-
-  const style = document.createElement('style');
-  style.id = 'toastPatch';
-
-  style.innerHTML = `
-    .toast{
-      position:fixed;
-      right:20px;
-      top:20px;
-      z-index:99999;
-      padding:12px 18px;
-      border-radius:12px;
-      color:#fff;
-      font-size:14px;
-      font-weight:600;
-      opacity:0;
-      transform:translateY(-10px);
-      transition:.25s ease;
-      box-shadow:0 10px 30px rgba(0,0,0,.15);
-    }
-    .toast.show{
-      opacity:1;
-      transform:translateY(0);
-    }
-    .toast-success{background:#10b981;}
-    .toast-error{background:#ef4444;}
-    .toast-info{background:#3b82f6;}
-  `;
-
-  document.head.appendChild(style);
-})();
-
-/* =========================================
-   LOADER PATCH
-========================================= */
-function showLoader() {
-  const el = document.getElementById('globalLoader');
-  if (el) el.style.display = 'flex';
-}
-
-function hideLoader() {
-  const el = document.getElementById('globalLoader');
-  if (el) el.style.display = 'none';
-}
-
-/* =========================================
-   BUTTON AUTO DISABLE
-========================================= */
-function lockBtn(btn) {
-  if (!btn) return;
-  btn.disabled = true;
-  btn.style.opacity = '.6';
-}
-
-function unlockBtn(btn) {
-  if (!btn) return;
-  btn.disabled = false;
-  btn.style.opacity = '1';
-}
-
-/* =========================================
-   LOGIN BUTTON PATCH
-========================================= */
-(function patchLoginBtn() {
-  const btn = document.getElementById('loginBtn');
-  if (!btn) return;
-
-  btn.onclick = async function () {
-    lockBtn(btn);
-    showLoader();
-
-    try {
-      adminLogin();
-    } finally {
-      setTimeout(() => {
-        unlockBtn(btn);
-        hideLoader();
-      }, 500);
-    }
-  };
-})();
-
-/* =========================================
-   ESC CLOSE MODAL
-========================================= */
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open')
-      .forEach(m => m.classList.remove('open'));
-  }
-});
-
-/* =========================================
-   AUTO ACTIVE FIRST TAB
-========================================= */
-setTimeout(() => {
-  const firstTab = document.querySelector('.nav-item');
-  const firstPane = document.querySelector('.tab');
-
-  if (firstTab && firstPane && STATE.loggedIn) {
-    firstTab.classList.add('active');
-    firstPane.classList.add('active');
-  }
-}, 300);
-
-/* =========================================
-   SESSION TIMEOUT OPTIONAL
-========================================= */
-let sessionTimer;
-
-function resetSessionTimer() {
-  clearTimeout(sessionTimer);
-
-  sessionTimer = setTimeout(() => {
-    if (STATE.loggedIn) {
-      toast('Session expired', 'info');
-      adminLogout();
-    }
-  }, 1000 * 60 * 60 * 6); // 6 hr
-}
-
-['click', 'keydown', 'mousemove'].forEach(evt => {
-  document.addEventListener(evt, resetSessionTimer);
-});
-
-resetSessionTimer();
-
-/* =========================================
-   QUICK COUNTERS REFRESH
-========================================= */
-window.refreshDashboard = function () {
-  fetchDashboardStats();
-  loadStudents();
-  loadResults();
-  loadFees();
-  loadAttendance();
-
-  toast('Dashboard Refreshed', 'success');
+  toast("Deleted");
+  await loadResults();
 };
 
-/* =========================================
-   TABLE EXPORT CSV
-========================================= */
-window.exportTable = function (tableId, fileName = 'export.csv') {
-  const table = document.getElementById(tableId);
-  if (!table) return;
+/* ===============================
+   HELPERS
+=============================== */
+function autoGrade(p) {
+  p = Number(p);
 
-  let csv = [];
+  if (p >= 90) return "A+";
+  if (p >= 80) return "A";
+  if (p >= 70) return "B+";
+  if (p >= 60) return "B";
+  if (p >= 50) return "C";
+  if (p >= 33) return "D";
+  return "F";
+}
 
-  table.querySelectorAll('tr').forEach(row => {
-    let cols = row.querySelectorAll('th,td');
-    let data = [];
-
-    cols.forEach(col => {
-      data.push(
-        '"' + col.innerText.replace(/"/g, '""') + '"'
-      );
-    });
-
-    csv.push(data.join(','));
-  });
-
-  const blob = new Blob([csv.join('\n')], {
-    type: 'text/csv'
-  });
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = fileName;
-  a.click();
-};
-
-/* =========================================
-   LIVE CLOCK
-========================================= */
-(function liveClock() {
-  const el = document.getElementById('liveClock');
-  if (!el) return;
-
-  setInterval(() => {
-    const d = new Date();
-    el.innerText = d.toLocaleString();
-  }, 1000);
-})();
-
-/* =========================================
-   FINAL READY MESSAGE
-========================================= */
-setTimeout(() => {
-  console.log(
-    'RKPH Premium Admin Panel Loaded Successfully'
-  );
-}, 500);
-
-
-/* =====================================================
-   RKPH ERP ADMIN PANEL — CLEAN FINAL admin.js
-   PART 5 : Final Bindings + Utility Hooks + Ready End
-   (LAST PART)
-===================================================== */
-
-/* =========================================
-   GLOBAL WINDOW EXPORTS
-========================================= */
-window.addStudent = addStudent;
-window.updateStudent = updateStudent;
-window.loadStudents = loadStudents;
-
-window.loadResults = loadResults;
-window.loadFees = loadFees;
-window.loadAttendance = loadAttendance;
-
-window.fetchDashboardStats = fetchDashboardStats;
-window.refreshDashboard = refreshDashboard;
-
-/* =========================================
-   AUTO INPUT ENTER SUBMIT
-========================================= */
-(function bindFormsEnterKey() {
-  const forms = [
-    ['studentModal', saveStudent],
-    ['marksModal', saveMarks],
-    ['noticeModal', saveNotice],
-    ['assignModal', saveAssign],
-    ['feeModal', saveFee],
-    ['examModal', saveExam]
-  ];
-
-  forms.forEach(item => {
-    const modal = document.getElementById(item[0]);
-    if (!modal) return;
-
-    modal.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        item[1]();
-      }
-    });
-  });
-})();
-
-/* =========================================
-   SEARCH LIVE BINDINGS
-========================================= */
-(function bindLiveSearch() {
-  const stu = document.getElementById('stuSearch');
-  if (stu) {
-    stu.addEventListener('input', renderStudentTable);
-  }
-
-  const cls = document.getElementById('stuFilterClass');
-  if (cls) {
-    cls.addEventListener('change', renderStudentTable);
-  }
-
-  const stream = document.getElementById('stuFilterStream');
-  if (stream) {
-    stream.addEventListener('change', renderStudentTable);
-  }
-})();
-
-/* =========================================
-   SMART EMPTY STATES
-========================================= */
-function patchEmptyStates() {
+function clearMarksForm() {
   [
-    'studentTbody',
-    'marksTbody',
-    'feeTbody',
-    'noticeTbody',
-    'assignTbody'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
+    "m_roll","m_cls","m_stream",
+    "m_exam","m_rank"
+  ].forEach(id => setVal(id, ""));
 
-    if (!el.innerHTML.trim()) {
-      el.innerHTML = `
-        <tr>
-          <td colspan="10"
-            style="padding:25px;text-align:center;color:#888">
-            No records found
-          </td>
-        </tr>
-      `;
-    }
-  });
+  byId("marksSubjRows").innerHTML = "";
 }
 
-/* =========================================
-   AUTO PATCH AFTER LOAD
-========================================= */
-setTimeout(() => {
-  patchEmptyStates();
-}, 800);
+/* ===============================
+   AUTO LOAD
+=============================== */
+window.addEventListener("load", () => {
+  if (STATE.loggedIn) loadResults();
+});
 
-/* =========================================
-   QUICK ACTION SHORTCUTS
-========================================= */
-document.addEventListener('keydown', function (e) {
+/* =====================================================
+   RKPH ERP ADMIN PANEL — PREMIUM FINAL admin.js
+   PART 4 : Fees Module (Exact HTML IDs)
+===================================================== */
 
+/* ===============================
+   LOAD FEES
+=============================== */
+window.loadFees = async function () {
+  await fetchFees();
+  renderFeeFilters();
+  renderFeeTable();
+};
+
+/* ===============================
+   FILTER DROPDOWNS
+=============================== */
+function renderFeeFilters() {
+  const clsSel = byId("feeClassFilter");
+  const stuSel = byId("feeStudentPicker");
+
+  if (!clsSel || !stuSel) return;
+
+  const classes = [...new Set(
+    STATE.students.map(x => x.class).filter(Boolean)
+  )].sort();
+
+  clsSel.innerHTML =
+    `<option value="">All Classes</option>` +
+    classes.map(c => `<option>${c}</option>`).join("");
+
+  fillFeeStudentDropdown();
+}
+
+/* ===============================
+   CLASS FILTER
+=============================== */
+window.filterFeeByClass = function () {
+  fillFeeStudentDropdown();
+  renderFeeTable();
+};
+
+function fillFeeStudentDropdown() {
+  const cls = val("feeClassFilter");
+  const stuSel = byId("feeStudentPicker");
+
+  if (!stuSel) return;
+
+  let rows = [...STATE.students];
+
+  if (cls) {
+    rows = rows.filter(x => x.class == cls);
+  }
+
+  stuSel.innerHTML =
+    `<option value="">— Select Student —</option>` +
+    rows.map(st => `
+      <option value="${st.roll}">
+        ${st.roll} — ${st.name}
+      </option>
+    `).join("");
+
+  byId("addFeeBtn").disabled = true;
+}
+
+/* ===============================
+   OPEN MODAL
+=============================== */
+window.openFeeModal = function () {
+  const roll = val("feeStudentPicker");
+
+  if (!roll) {
+    toast("Select student first", "error");
+    return;
+  }
+
+  const st = STATE.students.find(
+    x => x.roll == roll
+  );
+
+  setText(
+    "feeModalStudentName",
+    `${st.roll} — ${st.name}`
+  );
+
+  clearFeeForm();
+  openModal("feeModal");
+};
+
+/* ===============================
+   STUDENT PICKER CHANGE
+=============================== */
+window.renderFeeTable = function () {
+  const tbody = byId("feeTbody");
+  const roll = val("feeStudentPicker");
+
+  byId("addFeeBtn").disabled = !roll;
+
+  if (!roll) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="padding:24px;text-align:center">
+          Select a student
+        </td>
+      </tr>
+    `;
+
+    byId("feeSummaryStrip").style.display = "none";
+    return;
+  }
+
+  let rows = STATE.fees.filter(
+    x => x.roll == roll
+  );
+
+  if (!rows.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="padding:24px;text-align:center">
+          No fee records found
+        </td>
+      </tr>
+    `;
+
+    showFeeSummary([]);
+    return;
+  }
+
+  tbody.innerHTML = rows.map(f => `
+    <tr>
+      <td>${f.quarter || "-"}</td>
+      <td>${f.fee_type || "-"}</td>
+      <td>₹${Number(f.amount || 0).toLocaleString("en-IN")}</td>
+      <td>${f.due_date || "-"}</td>
+      <td>${f.paid_on || "-"}</td>
+      <td>${badgeStatus(f.status)}</td>
+      <td>
+        <button onclick="deleteFee('${f.id}')">
+          Delete
+        </button>
+      </td>
+    </tr>
+  `).join("");
+
+  showFeeSummary(rows);
+};
+
+/* ===============================
+   SUMMARY
+=============================== */
+function showFeeSummary(rows) {
+  byId("feeSummaryStrip").style.display = "grid";
+
+  let paid = 0;
+  let pending = 0;
+  let upcoming = 0;
+
+  rows.forEach(r => {
+    const amt = Number(r.amount || 0);
+
+    if (r.status == "paid") paid += amt;
+    else if (r.status == "pending") pending += amt;
+    else upcoming += amt;
+  });
+
+  setText("fss-paid", "₹" + paid.toLocaleString("en-IN"));
+  setText("fss-pending", "₹" + pending.toLocaleString("en-IN"));
+  setText("fss-upcoming", "₹" + upcoming.toLocaleString("en-IN"));
+  setText("fss-count", rows.length);
+}
+
+/* ===============================
+   SAVE FEE
+=============================== */
+window.saveFee = async function () {
+  try {
+    const roll = val("feeStudentPicker");
+
+    if (!roll) {
+      toast("Select student first", "error");
+      return;
+    }
+
+    const payload = {
+      roll: roll,
+      quarter: val("fe_q"),
+      fee_type: val("fe_type"),
+      amount: val("fe_amt"),
+      due_date: val("fe_due"),
+      paid_on: val("fe_paid"),
+      status: val("fe_status")
+    };
+
+    const { error } = await supabaseClient
+      .from("fees")
+      .insert([payload]);
+
+    if (error) throw error;
+
+    toast("Fee Entry Saved");
+
+    closeModal("feeModal");
+    clearFeeForm();
+
+    await loadFees();
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Save failed", "error");
+  }
+};
+
+/* ===============================
+   DELETE
+=============================== */
+window.deleteFee = async function (id) {
+  if (!confirm("Delete fee entry?")) return;
+
+  const { error } = await supabaseClient
+    .from("fees")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    toast("Delete failed", "error");
+    return;
+  }
+
+  toast("Deleted");
+  await loadFees();
+};
+
+/* ===============================
+   HELPERS
+=============================== */
+function clearFeeForm() {
+  [
+    "fe_q","fe_type","fe_amt",
+    "fe_due","fe_paid"
+  ].forEach(id => setVal(id, ""));
+
+  setVal("fe_status", "paid");
+}
+
+function badgeStatus(s) {
+  if (s == "paid") {
+    return `<span style="color:#14b8a6;font-weight:700">Paid</span>`;
+  }
+
+  if (s == "pending") {
+    return `<span style="color:#ef4444;font-weight:700">Pending</span>`;
+  }
+
+  return `<span style="color:#f59e0b;font-weight:700">Upcoming</span>`;
+}
+
+/* ===============================
+   AUTO LOAD
+=============================== */
+window.addEventListener("load", () => {
+  if (STATE.loggedIn) loadFees();
+});
+/* =====================================================
+   RKPH ERP ADMIN PANEL — PREMIUM FINAL admin.js
+   PART 5 : Notices + Assignments + Attendance + Final
+===================================================== */
+
+/* ===============================
+   NOTICES
+=============================== */
+window.openNoticeModal = function () {
+  clearNoticeForm();
+  openModal("noticeModal");
+};
+
+window.saveNotice = function () {
+  const title = val("n_title");
+  if (!title) {
+    toast("Notice title required", "error");
+    return;
+  }
+
+  const payload = {
+    id: Date.now(),
+    title: title,
+    date: val("n_date"),
+    tag: val("n_tag"),
+    type: val("n_type"),
+    class: val("n_class"),
+    student: val("n_student"),
+    urgent: byId("n_urgent").checked
+  };
+
+  STATE.notices.unshift(payload);
+
+  toast("Notice Saved");
+  closeModal("noticeModal");
+
+  renderNoticeLists();
+  fetchDashboardStats();
+};
+
+function renderNoticeLists() {
+  const box = byId("noticeGlobalList");
+  if (!box) return;
+
+  const rows = STATE.notices.filter(
+    x => x.type === "global"
+  );
+
+  if (!rows.length) {
+    box.innerHTML =
+      `<div style="color:#94a3b8">No notices</div>`;
+    return;
+  }
+
+  box.innerHTML = rows.map(n => `
+    <div class="mini-pill">
+      ${n.title}
+    </div>
+  `).join("");
+}
+
+window.switchNoticeTab = function (type, btn) {
+  [
+    "global",
+    "class",
+    "private"
+  ].forEach(x => {
+    byId("ntab-" + x + "-content").style.display =
+      x === type ? "block" : "none";
+  });
+
+  document.querySelectorAll(
+    "#tab-notices .btn"
+  ).forEach(x => {
+    x.classList.remove("btn-teal");
+    x.classList.add("btn-ghost");
+  });
+
+  btn.classList.remove("btn-ghost");
+  btn.classList.add("btn-teal");
+};
+
+function clearNoticeForm() {
+  [
+    "n_title","n_date"
+  ].forEach(id => setVal(id, ""));
+
+  setVal("n_tag", "General");
+  setVal("n_type", "global");
+}
+
+/* ===============================
+   ASSIGNMENTS
+=============================== */
+window.openAssignModal = function () {
+  clearAssignForm();
+  openModal("assignModal");
+};
+
+window.saveAssign = function () {
+  const title = val("a_title");
+
+  if (!title) {
+    toast("Title required", "error");
+    return;
+  }
+
+  STATE.assignments.unshift({
+    id: Date.now(),
+    subject: val("a_sub"),
+    title: title,
+    due: val("a_due"),
+    status: byId("a_done").checked
+      ? "Done"
+      : "Pending"
+  });
+
+  toast("Assignment Saved");
+  closeModal("assignModal");
+
+  renderAssignTable();
+  fetchDashboardStats();
+};
+
+window.filterAssignByClass = function () {
+  renderAssignStudentPicker();
+};
+
+function renderAssignStudentPicker() {
+  const cls = val("assignClassFilter");
+  const sel = byId("assignStudentPicker");
+
+  let rows = [...STATE.students];
+
+  if (cls) rows = rows.filter(x => x.class == cls);
+
+  sel.innerHTML =
+    `<option value="">— Select Student —</option>` +
+    rows.map(st => `
+      <option value="${st.roll}">
+        ${st.roll} — ${st.name}
+      </option>
+    `).join("");
+
+  byId("addAssignBtn").disabled = false;
+}
+
+window.renderAssignTable = function () {
+  const tbody = byId("assignTbody");
+  if (!tbody) return;
+
+  if (!STATE.assignments.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="6"
+      style="padding:24px;text-align:center">
+      No assignments
+      </td></tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = STATE.assignments.map(a => `
+    <tr>
+      <td>${a.subject}</td>
+      <td>${a.title}</td>
+      <td>${a.due}</td>
+      <td>2025-26</td>
+      <td>${a.status}</td>
+      <td>-</td>
+    </tr>
+  `).join("");
+};
+
+function clearAssignForm() {
+  [
+    "a_title","a_due"
+  ].forEach(id => setVal(id, ""));
+
+  setVal("a_sub", "Physics");
+  byId("a_done").checked = false;
+}
+
+/* ===============================
+   ATTENDANCE
+=============================== */
+window.filterAttByClass = function () {
+  const cls = val("attClassFilter");
+  const sel = byId("attStudentPicker");
+
+  let rows = [...STATE.students];
+
+  if (cls) rows = rows.filter(x => x.class == cls);
+
+  sel.innerHTML =
+    `<option value="">— Select Student —</option>` +
+    rows.map(st => `
+      <option value="${st.roll}">
+        ${st.roll} — ${st.name}
+      </option>
+    `).join("");
+};
+
+window.renderAttendance = function () {
+  const wrap = byId("attEditorWrap");
+  const roll = val("attStudentPicker");
+
+  if (!roll) {
+    wrap.innerHTML = `
+      <div style="padding:30px;text-align:center">
+        Select student first
+      </div>
+    `;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="card-body">
+        <h3 style="margin-bottom:12px">
+          Attendance Editor
+        </h3>
+        <p style="color:#94a3b8">
+          Monthly calendar system can be added next.
+        </p>
+      </div>
+    </div>
+  `;
+};
+
+/* ===============================
+   FINAL INIT
+=============================== */
+window.addEventListener("load", () => {
   if (!STATE.loggedIn) return;
 
-  // Ctrl + N = Add Student
-  if (e.ctrlKey && e.key.toLowerCase() === 'n') {
-    e.preventDefault();
-    openStudentModal();
-  }
+  renderNoticeLists();
+  renderAssignTable();
 
-  // Ctrl + R = Refresh
-  if (e.ctrlKey && e.key.toLowerCase() === 'r') {
-    e.preventDefault();
-    refreshDashboard();
-  }
-
-  // Ctrl + L = Logout
-  if (e.ctrlKey && e.key.toLowerCase() === 'l') {
-    e.preventDefault();
-    adminLogout();
-  }
-});
-
-/* =========================================
-   SAFE NUMBER FORMATTER
-========================================= */
-window.money = function (num) {
-  return '₹' + Number(num || 0)
-    .toLocaleString('en-IN');
-};
-
-/* =========================================
-   THEME MEMORY (OPTIONAL)
-========================================= */
-window.toggleDarkMode = function () {
-  document.body.classList.toggle('dark-mode');
-
-  const enabled =
-    document.body.classList.contains('dark-mode');
-
-  localStorage.setItem(
-    'rkph_dark',
-    enabled ? '1' : '0'
-  );
-};
-
-(function restoreTheme() {
-  const dark = localStorage.getItem('rkph_dark');
-
-  if (dark === '1') {
-    document.body.classList.add('dark-mode');
-  }
-})();
-
-/* =========================================
-   FINAL SYSTEM HEALTH CHECK
-========================================= */
-(function healthCheck() {
-  const required = [
-    'loginScreen',
-    'app'
+  // Fill common class filters
+  const classIds = [
+    "assignClassFilter",
+    "attClassFilter"
   ];
 
-  required.forEach(id => {
-    if (!document.getElementById(id)) {
-      console.warn(id + ' not found');
-    }
+  const classes = [...new Set(
+    STATE.students.map(x => x.class).filter(Boolean)
+  )].sort();
+
+  classIds.forEach(id => {
+    const el = byId(id);
+    if (!el) return;
+
+    el.innerHTML =
+      `<option value="">All Classes</option>` +
+      classes.map(c =>
+        `<option>${c}</option>`
+      ).join("");
   });
-})();
+});
 
-/* =========================================
-   LAST READY BOOT
-========================================= */
-setTimeout(() => {
-  console.log(
-    'RKPH FINAL CLEAN admin.js READY'
-  );
-
-  if (STATE.loggedIn) {
-    patchEmptyStates();
-  }
-
-}, 1200);
-
-/* =========================================
+/* ===============================
    END OF FILE
-========================================= */
+=============================== */
