@@ -1573,6 +1573,54 @@ function renderNoticeLists() {
   `).join("");
 }
 
+/* ========= FINAL LOAD FIX ========= */
+
+async function loadAllDbModules() {
+  try {
+    await Promise.all([
+      fetchNotices(),
+      fetchAssignments(),
+      fetchAttendance()
+    ]);
+
+    renderNoticeLists();
+    renderAssignTable();
+    fetchDashboardStats();
+
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+/* run after page load */
+window.addEventListener("load", async () => {
+  if (localStorage.getItem("rkph_admin_login") === "1") {
+    await loadAllDbModules();
+  }
+});
+
+/* improve tab switching */
+const oldShowTab = window.showTab;
+
+window.showTab = async function(name, btn) {
+  oldShowTab(name, btn);
+
+  if (name === "notices") {
+    await fetchNotices();
+    renderNoticeLists();
+  }
+
+  if (name === "assignments") {
+    await fetchAssignments();
+    renderAssignTable();
+  }
+
+  if (name === "attendance") {
+    await fetchAttendance();
+  }
+
+  fetchDashboardStats();
+};
 /* ===============================
    END OF FILE
 =============================== */
