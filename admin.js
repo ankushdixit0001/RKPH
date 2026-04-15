@@ -355,7 +355,9 @@ window.openStudentModal = function () {
 window.saveStudent = function () {
   const btn = byId("addStudentBtn");
 
-  if (btn.dataset.mode === "edit") {
+  const mode = btn.dataset.mode || "add";
+
+  if (mode === "edit") {
     updateStudent(btn.dataset.oldRoll);
   } else {
     addStudent();
@@ -420,10 +422,7 @@ async function addStudent() {
    EDIT STUDENT
 =============================== */
 window.editStudent = function (roll) {
-  const st = STATE.students.find(
-    x => x.roll == roll
-  );
-
+  const st = STATE.students.find(x => x.roll == roll);
   if (!st) return;
 
   setVal("s_roll", st.roll);
@@ -440,13 +439,10 @@ window.editStudent = function (roll) {
   setVal("s_addr", st.address);
 
   const btn = byId("addStudentBtn");
-
   btn.dataset.mode = "edit";
   btn.dataset.oldRoll = roll;
-  btn.innerHTML =
-    `<i class="fas fa-save"></i> Update Student`;
 
-  setText("studentModalTitle", "Edit Student");
+  btn.innerHTML = "Update Student";
 
   openModal("studentModal");
 };
@@ -532,8 +528,7 @@ function resetStudentBtn() {
 
   btn.dataset.mode = "add";
   btn.dataset.oldRoll = "";
-  btn.innerHTML =
-    `<i class="fas fa-save"></i> Save Student`;
+  btn.innerHTML = "Save Student";
 }
 
 /* ===============================
