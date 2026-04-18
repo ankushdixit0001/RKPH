@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports Center — RKPH Inter College</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    /* =======================================================
+   RKPH Reports Center — Pro Analytics CSS
+   Fixed Version: Sidebar Layout & Windows Compatibility
+   ======================================================= */
+
+:root {
+  --bg: #07090f;
+  --teal: #4fc3c3;
+  --amber: #f5c842;
+  --rose: #e86b8a;
+  --text: #eef2ff;
+  --muted: rgba(148, 163, 184, 0.6);
+  --border: rgba(255, 255, 255, 0.08);
+  --glass: rgba(255, 255, 255, 0.035);
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --radius: 18px;
+  --sidebar-w: 260px;
+}
+
+/* ── RESET & BASE ── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── LAYOUT STRUCTURE (FIXED) ── */
+.app {
+  display: flex; /* Changed to Flex to prevent content overlap */
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  height: 100vh;
+  position: sticky; /* Uses sticky instead of fixed for better Windows rendering */
+  top: 0;
+  background: rgba(10, 15, 25, 0.98);
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  padding: 2rem 1rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.main {
+  flex: 1;
+  min-width: 0; /* Ensures content doesn't force flex overflow */
+  padding: 2.5rem;
+  background: transparent;
+}
+
+/* ── COMPONENTS ── */
+.g-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.g-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+}
+
+/* ── GRID SYSTEM ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* ── TABLES ── */
+.table-wrap {
+  overflow-x: auto;
+  max-height: 500px;
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #0f172a;
+  padding: 12px;
+  text-align: left;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  z-index: 5;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: rgba(238, 242, 255, 0.9);
+}
+
+tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── STAT BOXES ── */
+.stat-box h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.5rem;
+  margin-top: 5px;
+}
+
+.stat-box small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* ── BUTTONS & FILTERS ── */
+.btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.2s;
+  font-size: 0.85rem;
+}
+
+.btn-teal { background: var(--teal); color: #0a0f1a; }
+.btn-teal:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79, 195, 195, 0.3); }
+
+.f-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  padding: 10px 15px;
+  border-radius: 10px;
+  color: var(--text);
+  outline: none;
+  font-size: 0.85rem;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .app { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .main { padding: 1.5rem; }
+}
+
+/* ── UTILS ── */
+#toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 15px 25px;
+  border-radius: 15px;
+  background: rgba(10, 15, 25, 0.95);
+  border: 1px solid var(--teal);
+  backdrop-filter: blur(20px);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: 0.4s;
+  z-index: 9999;
+}
+
+#toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>Loading dashboard…</p>
+  </div>
+
+  <!-- Mobile Hamburger -->
+  <button class="mob-menu-btn" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <div class="app">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo">
+        <i class="fas fa-chart-pie"></i>
+        <div>
+          <strong>Reports Center</strong>
+          <span>RKPH Inter College</span>
+        </div>
+      </div>
+
+      <a href="admin_panel.html" class="nav-btn">
+        <i class="fas fa-arrow-left"></i> Back to Admin
+      </a>
+
+      <button class="nav-btn active" onclick="refreshAllData()">
+        <i class="fas fa-sync-alt"></i> Refresh Data
+      </button>
+
+      <button class="nav-btn" onclick="exportAllReports()">
+        <i class="fas fa-download"></i> Export All
+      </button>
+
+      <button class="nav-btn" onclick="downloadPDF()">
+        <i class="fas fa-file-pdf"></i> Download PDF
+      </button>
+
+      <button class="nav-btn" onclick="exportToCSV()">
+        <i class="fas fa-file-csv"></i> Export CSV
+      </button>
+
+      <div class="sidebar-footer">
+        RKPH ERP v2.0<br>
+        Updated: <span id="lastUpdated">—</span>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <main class="main">
+
+      <!-- Header -->
+      <div class="topbar">
+        <h1><i class="fas fa-chart-line"></i> Analytics Dashboard</h1>
+        <p>Real-time insights from Supabase · Auto-refreshes on load</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <small><i class="fas fa-users"></i> Total Students</small>
+          <h2 id="statStudents">—</h2>
+        </div>
+        <div class="stat-card">
+          <small><i class="fas fa-rupee-sign"></i> Fee Collected</small>
+          <h2 id="statRevenue">—</h2>
+        </div>
+        <div class="stat-card">
+          <small><i class="fas fa-calendar-check"></i> Avg Attendance</small>
+          <h2 id="statAttendance">—</h2>
+        </div>
+        <div class="stat-card">
+          <small><i class="fas fa-trophy"></i> Pass Rate</small>
+          <h2 id="statPassRate">—</h2>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <i class="fas fa-chart-bar"></i>
+            <h3>Fee Collection by Quarter</h3>
+          </div>
+          <div class="chart-body"><canvas id="revenueChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <i class="fas fa-chart-pie"></i>
+            <h3>Grade Distribution</h3>
+          </div>
+          <div class="chart-body"><canvas id="gradeChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍  Search by Roll No or Name…"
+          oninput="debounceSearch()">
+        <select id="classFilter" class="search-select" onchange="applyFilters()">
+          <option value="">All Classes</option>
+        </select>
+        <select id="sessionFilter" class="search-select" onchange="applyFilters()">
+          <option value="">All Sessions</option>
+          <option>2025-26</option>
+          <option>2024-25</option>
+          <option>2023-24</option>
+        </select>
+        <button class="btn btn-primary" onclick="applyFilters()"><i class="fas fa-search"></i> Search</button>
+        <button class="btn btn-outline" onclick="resetFilters()"><i class="fas fa-undo"></i> Reset</button>
+      </div>
+
+      <!-- Alert Row 1 -->
+      <div class="alert-row">
+
+        <div class="alert-card">
+          <div class="alert-header">
+            <h4><i class="fas fa-exclamation-triangle" style="color:var(--rose)"></i> Fee Defaulters</h4>
+            <span class="badge badge-danger">Pending &gt; ₹5,000</span>
+          </div>
+          <div class="table-container" style="max-height:260px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>Pending</th>
+                </tr>
+              </thead>
+              <tbody id="defaulterTable">
+                <tr>
+                  <td colspan="4" class="loading"><i class="fas fa-spinner"></i> Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-header">
+            <h4><i class="fas fa-user-slash" style="color:var(--amber)"></i> Low Attendance</h4>
+            <span class="badge badge-warning">Below 75%</span>
+          </div>
+          <div class="table-container" style="max-height:260px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>Att %</th>
+                </tr>
+              </thead>
+              <tbody id="lowAttendanceTable">
+                <tr>
+                  <td colspan="4" class="loading"><i class="fas fa-spinner"></i> Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Alert Row 2 -->
+      <div class="alert-row">
+
+        <div class="alert-card">
+          <div class="alert-header">
+            <h4><i class="fas fa-crown" style="color:var(--amber)"></i> Top Performers</h4>
+            <span class="badge badge-success">90%+</span>
+          </div>
+          <div class="table-container" style="max-height:260px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>Exam</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody id="topperTable">
+                <tr>
+                  <td colspan="4" class="loading"><i class="fas fa-spinner"></i> Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-header">
+            <h4><i class="fas fa-calendar-alt" style="color:var(--teal)"></i> Upcoming Exams</h4>
+            <span class="badge badge-info">Next 30 Days</span>
+          </div>
+          <div class="table-container" style="max-height:260px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Class</th>
+                  <th>Subject</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="examTable">
+                <tr>
+                  <td colspan="4" class="loading"><i class="fas fa-spinner"></i> Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Student Records Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3><i class="fas fa-list"></i> Student Records</h3>
+          <div class="table-actions">
+            <button class="btn btn-outline btn-sm" onclick="exportToCSV()">
+              <i class="fas fa-file-csv"></i> CSV
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="downloadPDF()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+        <div class="table-container" style="max-height:460px">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Stream</th>
+                <th>Father</th>
+                <th>Phone</th>
+                <th>Fee Status</th>
+              </tr>
+            </thead>
+            <tbody id="studentTable">
+              <tr>
+                <td colspan="7" class="loading"><i class="fas fa-spinner"></i> Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    /* =====================================================
+       RKPH REPORTS CENTER — JavaScript (Fixed & Complete)
+       ===================================================== */
+
+    // ── SUPABASE  (FIX: was "const supabase = supabase.createClient" — self-reference, crashes instantly) ──
+    const SUPABASE_URL = "https://xkmgugmhfmilgccwpqbi.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_xGQ5xycskcU8MaabewpWYw_ZLqxbgZ7";
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ── STATE ──
+    let allStudents = [];
+    let allFees = [];
+    let allResults = [];
+    let allAttendance = [];
+    let allExams = [];
+    let charts = {};
+
+    // ── INIT ──
+    document.addEventListener('DOMContentLoaded', async () => {
+      showToast('Connecting to database…', 'info');
+      await loadAllData();
+      renderAllStats();
+      renderAllCharts();
+      renderAllTables();
+      populateFilters();
+      hideLoading();
+      showToast('Dashboard ready!', 'success');
+      document.getElementById('lastUpdated').textContent =
+        new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    });
+
+    // ── LOAD DATA ──
+    async function loadAllData() {
+      try {
+        const [sR, fR, rR, aR, eR] = await Promise.all([
+          db.from('students').select('*').order('roll'),
+          db.from('fees').select('*'),
+          db.from('results').select('*'),
+          db.from('attendance').select('*'),
+          db.from('exam').select('*').order('exam_date', { ascending: true })
+        ]);
+
+        allStudents = sR.data || [];
+        allFees = fR.data || [];
+        allResults = rR.data || [];
+        allAttendance = aR.data || [];
+        allExams = eR.data || [];
+
+        [sR, fR, rR, aR, eR].forEach((r, i) => {
+          if (r.error) console.error(['students', 'fees', 'results', 'attendance', 'exam'][i], r.error);
+        });
+      } catch (err) {
+        console.error('Load error:', err);
+        showToast('Failed to load data — check console', 'error');
+      }
+    }
+
+    async function refreshAllData() {
+      showToast('Refreshing…', 'info');
+      showLoading();
+      await loadAllData();
+      renderAllStats();
+      renderAllCharts();
+      renderAllTables();
+      populateFilters();
+      hideLoading();
+      showToast('Refreshed!', 'success');
+      document.getElementById('lastUpdated').textContent =
+        new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ── STATS ──
+    function renderAllStats() {
+      // Students
+      document.getElementById('statStudents').textContent = allStudents.length || '0';
+
+      // Fee collected (paid only)
+      const paid = allFees
+        .filter(f => (f.status || '').toLowerCase() === 'paid')
+        .reduce((s, f) => s + (Number(f.amount) || 0), 0);
+      document.getElementById('statRevenue').textContent = paid > 0 ? '₹' + fmtIN(paid) : '₹0';
+
+      // Avg Attendance
+      if (allAttendance.length > 0) {
+        const p = allAttendance.filter(a => (a.status || '').toLowerCase() === 'present').length;
+        document.getElementById('statAttendance').textContent =
+          ((p / allAttendance.length) * 100).toFixed(1) + '%';
+      } else {
+        document.getElementById('statAttendance').textContent = '—';
+      }
+
+      // Pass Rate
+      if (allResults.length > 0) {
+        const passed = allResults.filter(r => parseFloat(r.percentage || 0) >= 33).length;
+        document.getElementById('statPassRate').textContent =
+          ((passed / allResults.length) * 100).toFixed(1) + '%';
+      } else {
+        document.getElementById('statPassRate').textContent = '—';
+      }
+    }
+
+    // ── CHARTS ──
+    function renderAllCharts() {
+      renderRevenueChart();
+      renderGradeChart();
+    }
+
+    function renderRevenueChart() {
+      const canvas = document.getElementById('revenueChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      // FIX: quarters can be stored as "Q1 (Apr–Jun)" — match with startsWith
+      const qd = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
+      allFees.filter(f => (f.status || '').toLowerCase() === 'paid').forEach(f => {
+        const q = (f.quarter || '').trim().toUpperCase();
+        if (q.startsWith('Q1')) qd.Q1 += Number(f.amount) || 0;
+        else if (q.startsWith('Q2')) qd.Q2 += Number(f.amount) || 0;
+        else if (q.startsWith('Q3')) qd.Q3 += Number(f.amount) || 0;
+        else if (q.startsWith('Q4')) qd.Q4 += Number(f.amount) || 0;
+      });
+
+      if (charts.revenue) charts.revenue.destroy();
+      charts.revenue = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Q1 (Apr–Jun)', 'Q2 (Jul–Sep)', 'Q3 (Oct–Dec)', 'Q4 (Jan–Mar)'],
+          datasets: [{
+            label: 'Collected (₹)',
+            data: [qd.Q1, qd.Q2, qd.Q3, qd.Q4],
+            backgroundColor: ['rgba(79,195,195,.65)', 'rgba(245,200,66,.65)', 'rgba(232,107,138,.65)', 'rgba(96,165,250,.65)'],
+            borderColor: 'transparent',
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => '₹' + fmtIN(c.raw) } }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8', callback: v => '₹' + fmtIN(v) } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    function renderGradeChart() {
+      const ctx = document.getElementById('gradeChart').getContext('2d');
+
+      const gc = {};
+      allResults.forEach(r => { const g = r.grade || 'N/A'; gc[g] = (gc[g] || 0) + 1; });
+
+      const labels = Object.keys(gc).length ? Object.keys(gc) : ['No Data'];
+      const data = Object.values(gc).length ? Object.values(gc) : [1];
+      const colors = ['#4fc3c3', '#f5c842', '#e86b8a', '#60a5fa', '#a78bfa', '#34d399', '#fb7185', '#fbbf24'];
+
+      if (charts.grade) charts.grade.destroy();
+      charts.grade = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: colors.slice(0, labels.length),
+            borderColor: '#07090f',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#eef2ff', font: { size: 10 }, padding: 12 } }
+          },
+          cutout: '60%'
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (charts.revenue) charts.revenue.resize();
+      if (charts.grade) charts.grade.resize();
+    });
+
+    // ── TABLES ──
+    function renderAllTables() {
+      renderDefaulterTable();
+      renderLowAttendanceTable();
+      renderTopperTable();
+      renderExamTable();
+      renderStudentTable();
+    }
+
+    function renderDefaulterTable() {
+      const tbody = document.getElementById('defaulterTable');
+      const dues = {};
+      allFees.filter(f => (f.status || '').toLowerCase() !== 'paid').forEach(f => {
+        dues[f.roll] = (dues[f.roll] || 0) + (Number(f.amount) || 0);
+      });
+
+      const list = allStudents
+        .filter(s => dues[s.roll] > 5000)
+        .map(s => ({ ...s, due: dues[s.roll] }))
+        .sort((a, b) => b.due - a.due)
+        .slice(0, 10);
+
+      tbody.innerHTML = list.length ? list.map(s => `
+    <tr>
+      <td><strong>${s.roll}</strong></td>
+      <td>${s.name || '—'}</td>
+      <td>${s.class || '—'}</td>
+      <td><span class="badge badge-danger">₹${fmtIN(s.due)}</span></td>
+    </tr>`).join('')
+        : `<tr><td colspan="4" class="empty-state"><i class="fas fa-check-circle" style="color:var(--green)"></i>No defaulters above ₹5,000</td></tr>`;
+    }
+
+    function renderLowAttendanceTable() {
+      const tbody = document.getElementById('lowAttendanceTable');
+      const att = {};
+      allAttendance.forEach(a => {
+        if (!att[a.roll]) att[a.roll] = { total: 0, present: 0 };
+        att[a.roll].total++;
+        if ((a.status || '').toLowerCase() === 'present') att[a.roll].present++;
+      });
+
+      const low = allStudents
+        .filter(s => att[s.roll] && att[s.roll].total >= 5 && ((att[s.roll].present / att[s.roll].total) * 100) < 75)
+        .map(s => ({ ...s, pct: ((att[s.roll].present / att[s.roll].total) * 100).toFixed(1) }))
+        .sort((a, b) => parseFloat(a.pct) - parseFloat(b.pct))
+        .slice(0, 10);
+
+      tbody.innerHTML = low.length ? low.map(s => `
+    <tr>
+      <td><strong>${s.roll}</strong></td>
+      <td>${s.name || '—'}</td>
+      <td>${s.class || '—'}</td>
+      <td><span class="badge badge-warning">${s.pct}%</span></td>
+    </tr>`).join('')
+        : `<tr><td colspan="4" class="empty-state"><i class="fas fa-check-circle" style="color:var(--green)"></i>All students ≥ 75% attendance</td></tr>`;
+    }
+
+    function renderTopperTable() {
+      const tbody = document.getElementById('topperTable');
+      const toppers = [...allResults]
+        .filter(r => parseFloat(r.percentage || 0) >= 90)
+        .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage))
+        .slice(0, 10);
+
+      tbody.innerHTML = toppers.length ? toppers.map(r => {
+        const st = allStudents.find(s => s.roll === r.roll) || {};
+        return `
+      <tr>
+        <td><strong>${r.roll}</strong></td>
+        <td>${st.name || '—'}</td>
+        <td>${r.exam || '—'}</td>
+        <td><span class="badge badge-success">${parseFloat(r.percentage).toFixed(1)}%</span></td>
+      </tr>`;
+      }).join('')
+        : `<tr><td colspan="4" class="empty-state"><i class="fas fa-trophy" style="color:var(--amber)"></i>No 90%+ scores yet</td></tr>`;
+    }
+
+    function renderExamTable() {
+      const tbody = document.getElementById('examTable');
+      const today = new Date();
+      const limit = new Date(); limit.setDate(today.getDate() + 30);
+
+      const upcoming = allExams
+        .filter(e => { if (!e.exam_date) return false; const d = new Date(e.exam_date); return d >= today && d <= limit; })
+        .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date))
+        .slice(0, 10);
+
+      // FIX: was using e.exam_time — schema column is start_time
+      tbody.innerHTML = upcoming.length ? upcoming.map(e => `
+    <tr>
+      <td><strong>${fmtDate(e.exam_date)}</strong></td>
+      <td>${e.class || '—'}</td>
+      <td>${e.subject || '—'}</td>
+      <td>${e.start_time || '—'}</td>
+    </tr>`).join('')
+        : `<tr><td colspan="4" class="empty-state"><i class="fas fa-calendar" style="color:var(--teal)"></i>No exams in the next 30 days</td></tr>`;
+    }
+
+    function renderStudentTable(filtered = null) {
+      const tbody = document.getElementById('studentTable');
+      const students = filtered || allStudents;
+
+      const dues = {};
+      allFees.filter(f => (f.status || '').toLowerCase() !== 'paid').forEach(f => {
+        dues[f.roll] = (dues[f.roll] || 0) + (Number(f.amount) || 0);
+      });
+
+      if (!students.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i class="fas fa-search"></i>No students found</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = students.slice(0, 60).map(s => {
+        const due = dues[s.roll] || 0;
+        // FIX: was using s.father — schema column is father_name
+        return `
+      <tr>
+        <td><strong>${s.roll || '—'}</strong></td>
+        <td>${s.name || '—'}</td>
+        <td>${s.class || '—'}</td>
+        <td>${s.stream || '—'}</td>
+        <td>${s.father_name || '—'}</td>
+        <td>${s.phone || '—'}</td>
+        <td>${due > 0
+            ? `<span class="badge badge-danger">Pending ₹${fmtIN(due)}</span>`
+            : `<span class="badge badge-success">Clear</span>`}</td>
+      </tr>`;
+      }).join('');
+    }
+
+    // ── FILTERS ──
+    function populateFilters() {
+      const sel = document.getElementById('classFilter');
+      const classes = [...new Set(allStudents.map(s => s.class).filter(Boolean))].sort();
+      sel.innerHTML = '<option value="">All Classes</option>';
+      classes.forEach(c => {
+        const o = document.createElement('option');
+        o.value = o.textContent = c;
+        sel.appendChild(o);
+      });
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const cls = document.getElementById('classFilter').value;
+      const sess = document.getElementById('sessionFilter').value;
+
+      const filtered = allStudents.filter(s => {
+        const okSearch = !q || String(s.roll).toLowerCase().includes(q) || String(s.name || '').toLowerCase().includes(q);
+        const okClass = !cls || s.class === cls;
+        const okSession = !sess || s.session === sess;
+        return okSearch && okClass && okSession;
+      });
+
+      renderStudentTable(filtered);
+      showToast(`${filtered.length} student(s) found`, 'info');
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('classFilter').value = '';
+      document.getElementById('sessionFilter').value = '';
+      renderStudentTable(allStudents);
+      showToast('Filters reset', 'info');
+    }
+
+    // ── EXPORTS ──
+    function exportToCSV() {
+      const dues = {};
+      allFees.filter(f => (f.status || '').toLowerCase() !== 'paid').forEach(f => {
+        dues[f.roll] = (dues[f.roll] || 0) + Number(f.amount || 0);
+      });
+
+      const rows = [['Roll No', 'Name', 'Class', 'Stream', 'Father', 'Phone', 'Session', 'Fee Status']];
+      allStudents.forEach(s => {
+        const due = dues[s.roll] || 0;
+        rows.push([
+          s.roll || '', s.name || '', s.class || '', s.stream || '',
+          s.father_name || '', s.phone || '', s.session || '',
+          due > 0 ? `Pending (₹${due})` : 'Clear'
+        ]);
+      });
+
+      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      dlFile(csv, `student_report_${today()}.csv`, 'text/csv');
+      showToast('CSV exported!', 'success');
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.setTextColor(40);
+      doc.text('RKPH Inter College — Student Report', 15, 20);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated: ${new Date().toLocaleString('en-IN')}`, 15, 30);
+      doc.text(`Total Students: ${allStudents.length}`, 15, 38);
+      doc.line(15, 43, 195, 43);
+
+      let y = 52;
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(40);
+      doc.text('Roll No', 15, y); doc.text('Name', 42, y);
+      doc.text('Class', 110, y); doc.text('Phone', 140, y);
+      y += 4; doc.line(15, y, 195, y); y += 6;
+      doc.setFont(undefined, 'normal');
+
+      allStudents.slice(0, 55).forEach(s => {
+        if (y > 278) { doc.addPage(); y = 20; }
+        doc.text(String(s.roll || ''), 15, y);
+        doc.text(String(s.name || '—').slice(0, 32), 42, y);
+        doc.text(String(s.class || '—'), 110, y);
+        doc.text(String(s.phone || '—'), 140, y);
+        y += 7;
+      });
+
+      doc.setFontSize(7); doc.setTextColor(160);
+      doc.text('Generated by RKPH ERP Reports Center', 15, 290);
+
+      doc.save(`student_list_${today()}.pdf`);
+      showToast('PDF downloaded!', 'success');
+    }
+
+    function exportAllReports() {
+      exportToCSV();
+      setTimeout(() => downloadPDF(), 600);
+    }
+
+    // ── SIDEBAR TOGGLE ──
+    function toggleSidebar() {
+      const s = document.getElementById('sidebar');
+      const o = document.getElementById('sidebarOverlay');
+      const open = s.classList.toggle('open');
+      o.classList.toggle('open', open);
+    }
+
+    document.addEventListener('click', e => {
+      const s = document.getElementById('sidebar');
+      const btn = document.querySelector('.mob-menu-btn');
+      if (window.innerWidth < 960 &&
+        s.classList.contains('open') &&
+        !s.contains(e.target) &&
+        !btn.contains(e.target)) {
+        toggleSidebar();
+      }
+    });
+
+    // ── LOADING ──
+    function showLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.remove('hidden'); }
+    function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
+
+    // ── TOAST ──
+    function showToast(message, type = 'info') {
+      const c = document.getElementById('toastContainer');
+      if (!c) return;
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+      t.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i> ${message}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 350); }, 3000);
+    }
+
+    let searchTimer;
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(applyFilters, 250);
+    }
+
+    // ── UTILITIES ──
+    function fmtIN(n) { return Number(n).toLocaleString('en-IN'); }
+    function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; }
+    function today() { return new Date().toISOString().split('T')[0]; }
+    function dlFile(content, name, mime) {
+      const b = new Blob([content], { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b); a.download = name; a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ── LOADING OVERLAY ──
+    function showLoading() {
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+  </script>
+</body>
+
+</html>

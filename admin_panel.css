@@ -1051,3 +1051,15 @@ table.admin-tbl tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 768px) {
   .mob-menu-btn { display: flex; }
 }
+
+
+.btn-ghost{
+  background:transparent;
+  color:var(--muted);
+  border:1px solid var(--border);
+}
+
+.btn-ghost:hover{
+  color:var(--text);
+  background:rgba(255,255,255,.05);
+}

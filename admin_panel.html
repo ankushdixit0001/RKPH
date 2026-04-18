@@ -64,7 +64,7 @@
     <div class="nav-item" onclick="showTab('fees',this)"><i class="fas fa-rupee-sign"></i> Fee Records</div>
     <div class="nav-item" onclick="showTab('attendance',this)"><i class="fas fa-calendar-check"></i> Attendance</div>
     <div class="nav-section">System</div>
-    <div class="nav-item" onclick="showTab('export',this)"><i class="fas fa-download"></i> Save & Export</div>
+    <div class="nav-item" onclick="window.location.href='reports.html'"><i class="fas fa-file-pdf"></i>Reports Center</div>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
     </div>
@@ -102,7 +102,7 @@
       <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
         <div><h1><i class="fas fa-user-graduate" style="color:var(--teal);font-size:1.4rem;margin-right:8px"></i>Students</h1><p>Manage all student records.</p></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost" onclick="showTab('import',this)"><i class="fas fa-file-csv"></i> Bulk Import CSV</button>
+          <button class="btn btn-ghost" onclick="window.location.href='reports.html'"><i class="fas fa-file-pdf"></i>Reports Center</button>
           <button class="btn btn-teal" onclick="openStudentModal()"><i class="fas fa-plus"></i> Add Student</button>
         </div>
       </div>
