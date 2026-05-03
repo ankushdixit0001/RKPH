@@ -4205,9 +4205,9 @@ function(type,btn){
 
 /* ---------- ASSIGN SAVE ---------- */
 const oldSaveAssign =
-window.saveAssignment;
+window.saveAssign;
 
-window.saveAssignment =
+window.saveAssign =
 async function () {
 
   try {
@@ -4235,9 +4235,9 @@ async function () {
 
 /* ---------- ASSIGN DELETE ---------- */
 const oldDeleteAssign =
-window.deleteAssignment;
+window.deleteAssign;
 
-window.deleteAssignment =
+window.deleteAssign =
 async function(id){
 
   await oldDeleteAssign(id);
