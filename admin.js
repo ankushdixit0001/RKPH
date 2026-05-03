@@ -4576,3 +4576,202 @@ setInterval(() => {
   }
 
 }, 30000);
+/* =====================================================
+   RKPH ERP ADMIN PANEL — FINAL CLEANUP PATCH
+   Fixes: ID-based deletes, dashboard loading, state
+   ===================================================== */
+
+/* ---------- STATE EXTENSION ---------- */
+STATE.timetable = STATE.timetable || [];
+STATE.exams     = STATE.exams     || [];
+
+/* ---------- DASHBOARD LOAD FIX ---------- */
+const _origLoadDashboard = loadDashboard;
+loadDashboard = async function () {
+  await Promise.all([
+    fetchStudents(),
+    fetchResults(),
+    fetchFees(),
+    typeof fetchNotices === "function" ? fetchNotices() : Promise.resolve(),
+    typeof fetchAssignments === "function" ? fetchAssignments() : Promise.resolve()
+  ]);
+  fetchDashboardStats();
+};
+
+/* ---------- NOTICE CARD (ID-based delete) ---------- */
+function noticeCard(n) {
+  const id   = n.id || "";
+  const title = (n.title || "").replace(/'/g, "&#39;");
+  const date  = n.notice_date || "";
+  return `
+  <div class="mini-pill" style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+    <span>${n.urgent ? "🔴 " : ""}${title}<small style="opacity:.6">${date}</small></span>
+    <button onclick="deleteNotice('${id}')">✕</button>
+  </div>`;
+}
+
+/* ---------- DELETE NOTICE (ID) ---------- */
+window.deleteNotice = async function (id) {
+  if (!id || !confirm("Delete notice?")) return;
+  const { error } = await supabaseClient.from("notice").delete().eq("id", id);
+  if (error) { toast("Delete failed", "error"); return; }
+  await refreshModule("notices");
+  toast("Deleted");
+};
+
+/* ---------- RENDER ASSIGN TABLE (ID-based) ---------- */
+window.renderAssignTable = function () {
+  const tbody = byId("assignTbody");
+  if (!tbody) return;
+  const cls  = val("assignClassFilter");
+  const roll = val("assignStudentPicker");
+  const sess = val("assignSessionFilter");
+  let rows = [...STATE.assignments];
+  if (cls)  rows = rows.filter(x => x.class === cls);
+  if (roll) rows = rows.filter(x => x.roll === roll);
+  if (sess) rows = rows.filter(x => x.session === sess);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center">No assignments</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(a => {
+    const id = a.id || "";
+    return `<tr>
+      <td>${a.subject || "-"}</td>
+      <td>${a.title || "-"}</td>
+      <td>${a.due_date || "-"}</td>
+      <td>${a.session || "-"}</td>
+      <td>${a.status || "-"}</td>
+      <td style="display:flex;gap:6px">
+        <button onclick="toggleAssign('${id}','${a.status}')">Toggle</button>
+        <button onclick="deleteAssign('${id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join("");
+};
+
+/* ---------- TOGGLE ASSIGN (ID) ---------- */
+window.toggleAssign = async function (id, status) {
+  if (!id) return;
+  const next = status === "Completed" ? "Pending" : "Completed";
+  await supabaseClient.from("assignment").update({ status: next }).eq("id", id);
+  await refreshModule("assignments");
+  toast("Updated");
+};
+
+/* ---------- DELETE ASSIGN (ID) ---------- */
+window.deleteAssign = async function (id) {
+  if (!id || !confirm("Delete assignment?")) return;
+  const { error } = await supabaseClient.from("assignment").delete().eq("id", id);
+  if (error) { toast("Delete failed", "error"); return; }
+  await refreshModule("assignments");
+  toast("Deleted");
+};
+
+/* ---------- RENDER FEE TABLE (ID-based) ---------- */
+window.renderFeeTable = function () {
+  const tbody = byId("feeTbody");
+  if (!tbody) return;
+  const roll = val("feeStudentPicker");
+  byId("addFeeBtn").disabled = !roll;
+  let rows = [...STATE.fees];
+  if (roll) rows = rows.filter(x => x.roll === roll);
+  updateFeeSummary(rows);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center">No fee records</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(f => {
+    const id = f.id || "";
+    return `<tr>
+      <td>${f.quarter || "-"}</td>
+      <td>${f.fee_type || "-"}</td>
+      <td>₹${Number(f.amount || 0).toLocaleString("en-IN")}</td>
+      <td>${f.due_date || "-"}</td>
+      <td>${f.paid_on || "-"}</td>
+      <td>${badgeStatus(f.status)}</td>
+      <td>
+        <button onclick="editFee('${f.roll}','${f.quarter}','${(f.fee_type||'').replace(/'/g,'\\&#39;')}','${f.amount}','${f.due_date}','${f.status}')">Edit</button>
+        <button onclick="deleteFee('${id}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join("");
+};
+
+/* ---------- DELETE FEE (ID) ---------- */
+window.deleteFee = async function (id) {
+  if (!id || !confirm("Delete fee entry?")) return;
+  const { error } = await supabaseClient.from("fees").delete().eq("id", id);
+  if (error) { toast("Delete failed", "error"); return; }
+  await refreshModule("fees");
+  toast("Deleted");
+};
+
+/* ---------- RENDER MARKS TABLE (ID-based) ---------- */
+window.renderMarksTable = function () {
+  const tbody = byId("marksTbody");
+  if (!tbody) return;
+  const cls  = val("marksFilterClass");
+  const sess = val("marksFilterSession");
+  let rows = [...STATE.results];
+  if (cls)  rows = rows.filter(x => x.class === cls);
+  if (sess) rows = rows.filter(x => x.session === sess);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center">No results</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const id = r.id || "";
+    return `<tr>
+      <td>${r.roll}</td>
+      <td>${r.class || "-"}</td>
+      <td>${r.session || "-"}</td>
+      <td>${r.exam || "-"}</td>
+      <td>${r.total || 0}</td>
+      <td>${r.percentage || 0}%</td>
+      <td>${r.grade || "-"}</td>
+      <td><button onclick="deleteResult('${id}')">Delete</button></td>
+    </tr>`;
+  }).join("");
+};
+
+/* ---------- DELETE RESULT (ID) ---------- */
+window.deleteResult = async function (id) {
+  if (!id || !confirm("Delete result?")) return;
+  const { error } = await supabaseClient.from("results").delete().eq("id", id);
+  if (error) { toast("Delete failed", "error"); return; }
+  await refreshModule("marks");
+  toast("Deleted");
+};
+
+/* ---------- RENDER EXAM TABLE (ID-based) ---------- */
+window.renderExamTable = function () {
+  const tbody = byId("examTbody");
+  if (!tbody) return;
+  const cls = "Class " + val("ttClassPicker");
+  let rows = STATE.exams.filter(x => x.class === cls);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center">No exams scheduled</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(e => {
+    const id = e.id || "";
+    return `<tr>
+      <td>${e.exam_date || "-"}</td>
+      <td>${dayName(e.exam_date)}</td>
+      <td>${e.exam_name || ""}<br><small>${e.subject || ""}</small></td>
+      <td>${e.start_time || ""} - ${e.end_time || ""}</td>
+      <td>${e.room_no || "-"}</td>
+      <td><button onclick="deleteExam('${id}')">Delete</button></td>
+    </tr>`;
+  }).join("");
+};
+
+/* ---------- DELETE EXAM (ID) ---------- */
+window.deleteExam = async function (id) {
+  if (!id || !confirm("Delete exam?")) return;
+  const { error } = await supabaseClient.from("exam").delete().eq("id", id);
+  if (error) { toast("Delete failed", "error"); return; }
+  await refreshModule("timetable");
+  toast("Deleted");
+};

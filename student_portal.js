@@ -1318,3 +1318,244 @@ async function loadAttendance(roll) {
 }
 
 
+
+/* =====================================================
+   RKPH ERP STUDENT PORTAL — FINAL CLEANUP PATCH
+   Fixes: Supabase init, destructive UI functions,
+          data mapping, missing populate calls
+   ===================================================== */
+
+/* ---------- SUPABASE CLIENT INIT ---------- */
+if (typeof supabaseClient === "undefined" && typeof window.supabase !== "undefined") {
+  const SUPABASE_URL = "https://xkmgugmhfmilgccwpqbi.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_xGQ5xycskcU8MaabewpWYw_ZLqxbgZ7";
+  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+/* ---------- SAFE DEFAULT GLOBALS ---------- */
+window.FEES       = window.FEES       || {};
+window.ATTENDANCE = window.ATTENDANCE || {};
+window.NOTICES    = window.NOTICES    || { global: [], class: {}, private: {} };
+window.ASSIGNS    = window.ASSIGNS    || {};
+window.RESULTS    = window.RESULTS    || {};
+window.TT_DATA    = window.TT_DATA    || {};
+window.PERIODS    = window.PERIODS    || ['08:00–08:45','09:00–09:45','10:00–10:45','11:00–11:45','12:00–12:45','13:00–13:45','14:00–14:45','15:00–15:45'];
+window.HISTORY    = window.HISTORY    || {};
+window.STUDENTS   = window.STUDENTS   || {};
+
+/* ---------- MINIMAL FALLBACK TIMETABLE ---------- */
+if (!window.TT_DATA || Object.keys(window.TT_DATA).length === 0) {
+  window.TT_DATA = {
+    11: {
+      label: 'Class 11',
+      days: {
+        Monday:    ['Physics','Chemistry','Maths','English','Hindi','Free Period','Physics Lab','Sports'],
+        Tuesday:   ['Chemistry','Maths','Physics','English','Hindi','Free Period','Chemistry Lab','Sports'],
+        Wednesday: ['Maths','Physics','Chemistry','English','Hindi','Free Period','Maths Lab','Library'],
+        Thursday:  ['Physics','Maths','Chemistry','English','Hindi','Free Period','Games','Sports'],
+        Friday:    ['Chemistry','Physics','Maths','English','Hindi','Free Period','Practical','Sports'],
+        Saturday:  ['Maths','Chemistry','Physics','English','Hindi','Free Period','Club','Sports']
+      },
+      exam: []
+    },
+    10: {
+      label: 'Class 10',
+      days: {
+        Monday:    ['Hindi','English','Maths','Science','Social Science','Sanskrit','Free Period','Sports'],
+        Tuesday:   ['English','Maths','Hindi','Science','Social Science','Sanskrit','Free Period','Sports'],
+        Wednesday: ['Maths','Hindi','English','Science','Social Science','Sanskrit','Free Period','Library'],
+        Thursday:  ['Science','English','Maths','Hindi','Social Science','Sanskrit','Free Period','Sports'],
+        Friday:    ['Social Science','Science','English','Maths','Hindi','Sanskrit','Free Period','Sports'],
+        Saturday:  ['Hindi','Maths','Science','English','Social Science','Sanskrit','Free Period','Sports']
+      },
+      exam: []
+    }
+  };
+}
+
+/* ---------- SAFE FEE LOADER (replaces destructive version) ---------- */
+window.loadFees = async function (roll) {
+  if (!roll || !supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient.from("fees").select("*").eq("roll", roll);
+    if (error || !data) return;
+    FEES[roll] = data.map(f => ({
+      q:      f.quarter   || "-",
+      type:   f.fee_type  || "-",
+      amt:    Number(f.amount || 0),
+      due:    f.due_date  || "—",
+      paid:   f.paid_on   || "—",
+      status: f.status    || "Pending"
+    }));
+    renderFeeTable("all");
+    updateFeeStats(roll);
+  } catch (e) { console.error("loadFees", e); }
+};
+
+/* ---------- SAFE ATTENDANCE LOADER (replaces destructive version) ---------- */
+window.loadAttendance = async function (roll) {
+  if (!roll || !supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient.from("attendance").select("*").eq("roll", roll);
+    if (error || !data) return;
+    ATTENDANCE[roll] = {};
+    data.forEach(a => {
+      if (!a.att_date) return;
+      const d = new Date(a.att_date);
+      const mk = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!ATTENDANCE[roll][mk]) ATTENDANCE[roll][mk] = {};
+      ATTENDANCE[roll][mk][d.getDate()] = (a.status || "present").toLowerCase();
+    });
+    renderCalendar();
+    renderSubjBars();
+  } catch (e) { console.error("loadAttendance", e); }
+};
+
+/* ---------- FIX populatePortal property mapping ---------- */
+const _origPopulatePortal = populatePortal;
+window.populatePortal = function (st) {
+  const patched = Object.assign({}, st);
+  if (!patched.father && patched.father_name)       patched.father = patched.father_name;
+  if (!patched.fatherPhone && patched.father_phone) patched.fatherPhone = patched.father_phone;
+  if (!patched.cls && patched.class)                patched.cls = patched.class;
+  _origPopulatePortal(patched);
+};
+
+/* ---------- WRAP doLogin to populate portal & fetch data ---------- */
+const _origDoLogin = window.doLogin;
+window.doLogin = async function () {
+  await _origDoLogin();
+  if (AUTH.loggedIn && AUTH.student) {
+    populatePortal(AUTH.student);
+    populateCertificates();
+    await loadStudentNotices(AUTH.student);
+    await loadStudentAssignments(AUTH.student.roll);
+    await loadStudentResults(AUTH.student.roll);
+  }
+};
+
+/* ---------- FIX searchResult to use renderResult ---------- */
+const _origSearchResult = window.searchResult;
+window.searchResult = async function () {
+  const query = document.getElementById("resQuery").value.trim().toUpperCase();
+  if (!query) { alert("Enter roll number"); return; }
+
+  const { data, error } = await supabaseClient.from("results").select("*").eq("roll", query);
+  if (error || !data || data.length === 0) { alert("No result found"); return; }
+
+  const r = data[0];
+  let subjects = [];
+  try {
+    subjects = typeof r.subjects === "string" ? JSON.parse(r.subjects) : (r.subjects || []);
+  } catch (e) { subjects = []; }
+
+  const mapped = {
+    name:    (AUTH.student && AUTH.student.roll === query) ? AUTH.student.name : query,
+    cls:     r.class || "-",
+    stream:  r.stream || "General",
+    roll:    r.roll,
+    pct:     Number(r.percentage || 0),
+    grade:   r.grade || "-",
+    rank:    r.rank || "-",
+    remarks: r.remarks || "-",
+    total:   Number(r.total || 0),
+    mm:      Number(r.max_total || 0),
+    subjects: subjects.map(s => ({
+      n:  s.subject || s.n || "-",
+      mm: Number(s.max_marks || s.mm || 0),
+      obt: Number(s.obtained || s.obt || 0),
+      g:  s.grade || s.g || "-"
+    }))
+  };
+
+  renderResult(mapped, r.exam || "Exam");
+};
+
+/* ---------- FIX loadQuick ---------- */
+window.loadQuick = function (cls, exam) {
+  document.getElementById("resClass").value = cls;
+  document.getElementById("resExam").value = exam;
+  document.getElementById("resQuery").value = (AUTH.loggedIn && AUTH.student) ? AUTH.student.roll : "";
+  window.searchResult();
+};
+
+/* ---------- FETCH NOTICES (populate NOTICES global) ---------- */
+async function loadStudentNotices(st) {
+  if (!supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient.from("notice").select("*");
+    if (error || !data) return;
+    NOTICES.global  = [];
+    NOTICES.class   = {};
+    NOTICES.private = {};
+    data.forEach(n => {
+      const item = { t: n.title || "", d: n.notice_date || "", u: !!n.urgent, tag: n.tag || "" };
+      if (n.type === "global") {
+        NOTICES.global.push(item);
+      } else if (n.type === "class") {
+        if (!NOTICES.class[n.target_class]) NOTICES.class[n.target_class] = [];
+        NOTICES.class[n.target_class].push(item);
+      } else if (n.type === "private") {
+        if (!NOTICES.private[n.target_roll]) NOTICES.private[n.target_roll] = [];
+        NOTICES.private[n.target_roll].push(item);
+      }
+    });
+    if (AUTH.loggedIn && AUTH.student) populatePortal(AUTH.student);
+  } catch (e) { console.error("loadStudentNotices", e); }
+}
+
+/* ---------- FETCH ASSIGNMENTS (populate ASSIGNS global) ---------- */
+async function loadStudentAssignments(roll) {
+  if (!supabaseClient || !roll) return;
+  try {
+    const { data, error } = await supabaseClient.from("assignment").select("*").eq("roll", roll);
+    if (error || !data) return;
+    ASSIGNS[roll] = data.map(a => ({
+      sub:    a.subject || "-",
+      t:      a.title || "-",
+      due:    a.due_date || "-",
+      done:   ["completed","submitted","done"].includes((a.status || "").toLowerCase()),
+      session: a.session || "2025-26"
+    }));
+    if (AUTH.loggedIn && AUTH.student) populatePortal(AUTH.student);
+  } catch (e) { console.error("loadStudentAssignments", e); }
+}
+
+/* ---------- FETCH RESULTS (populate RESULTS global) ---------- */
+async function loadStudentResults(roll) {
+  if (!supabaseClient || !roll) return;
+  try {
+    const { data, error } = await supabaseClient.from("results").select("*").eq("roll", roll);
+    if (error || !data) return;
+    data.forEach(r => {
+      let subjects = [];
+      try {
+        subjects = typeof r.subjects === "string" ? JSON.parse(r.subjects) : (r.subjects || []);
+      } catch (e) { subjects = []; }
+      RESULTS[`${r.roll}|${r.exam}`] = {
+        name:    AUTH.student ? AUTH.student.name : r.roll,
+        cls:     r.class || "-",
+        stream:  r.stream || "General",
+        roll:    r.roll,
+        pct:     Number(r.percentage || 0),
+        grade:   r.grade || "-",
+        rank:    r.rank || "-",
+        remarks: r.remarks || "-",
+        total:   Number(r.total || 0),
+        mm:      Number(r.max_total || 0),
+        subjects: subjects.map(s => ({
+          n:  s.subject || s.n || "-",
+          mm: Number(s.max_marks || s.mm || 0),
+          obt: Number(s.obtained || s.obt || 0),
+          g:  s.grade || s.g || "-"
+        }))
+      };
+    });
+  } catch (e) { console.error("loadStudentResults", e); }
+}
+
+/* ---------- AUTO-INIT CERTIFICATES ON LOAD ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  if (!document.getElementById("spHeader")) return;
+  populateCertificates();
+});
