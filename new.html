@@ -777,7 +777,11 @@ class StorageDriver {
     if (!this.sb) return [];
     try {
       const { data, error } = await this.sb.from(tbl).select('*');
-      if (error) { console.error("DB Fetch Error:", error); return []; }
+      if (error) { 
+         console.error("DB Fetch Error:", error); 
+         appUI.showToast('DB Error (' + tbl + '): ' + error.message, 'danger');
+         return []; 
+      }
       return data || [];
     } catch (e) { console.error(e); return []; }
   }
@@ -785,7 +789,11 @@ class StorageDriver {
     if (!this.sb) return null;
     try {
       const { data, error } = await this.sb.from(tbl).insert([rec]).select();
-      if (error) { console.error("DB Insert Error:", error); appUI.showToast('DB Error: ' + error.message, 'danger'); return null; }
+      if (error) { 
+         console.error("DB Insert Error:", error); 
+         appUI.showToast('DB Error: ' + error.message, 'danger'); 
+         return null; 
+      }
       return data ? data[0] : null;
     } catch (e) { console.error(e); return null; }
   }
@@ -793,14 +801,20 @@ class StorageDriver {
     if (!this.sb) return;
     try {
       const { error } = await this.sb.from(tbl).update(u).eq(f, v);
-      if (error) { console.error("DB Update Error:", error); appUI.showToast('DB Error: ' + error.message, 'danger'); }
+      if (error) { 
+         console.error("DB Update Error:", error); 
+         appUI.showToast('DB Error: ' + error.message, 'danger'); 
+      }
     } catch (e) { console.error(e); }
   }
   async remove(tbl, f, v) {
     if (!this.sb) return;
     try {
       const { error } = await this.sb.from(tbl).delete().eq(f, v);
-      if (error) { console.error("DB Delete Error:", error); appUI.showToast('DB Error: ' + error.message, 'danger'); }
+      if (error) { 
+         console.error("DB Delete Error:", error); 
+         appUI.showToast('DB Error: ' + error.message, 'danger'); 
+      }
     } catch (e) { console.error(e); }
   }
 }
@@ -909,7 +923,12 @@ const publicPortal = {
     if (!myRes.length) { out.innerHTML = `<div class="lookup-result-card" style="border-color:rgba(232,107,138,.3);"><p style="color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> No results found for ID: <strong>${sid}</strong></p><p style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem;">Check the ID or contact the school office.</p></div>`; return; }
     
     let sm = 0, st = 0, gp = 0;
-    myRes.forEach(r => { sm += Number(r.marks); st += Number(r.total || 100); let g = 4; if (Number(r.marks) < 90) g = 3.7; if (Number(r.marks) < 85) g = 3.3; if (Number(r.marks) < 80) g = 3; if (Number(r.marks) < 70) g = 2; gp += g; });
+    myRes.forEach(r => { 
+      const m = Number(r.marks)||0;
+      sm += m; 
+      st += Number(r.total || 100); 
+      let g = 4; if (m < 90) g = 3.7; if (m < 85) g = 3.3; if (m < 80) g = 3; if (m < 70) g = 2; gp += g; 
+    });
     const cgpa = (gp / myRes.length).toFixed(2), perc = (sm / st * 100).toFixed(1);
     
     out.innerHTML = `
@@ -1070,12 +1089,12 @@ const studentApp = {
   async dash(sid) {
     const att = await db.get('attendance'), my = att.filter(a => String(a.student_id) === String(sid)), pr = my.filter(a => a.status === 'Present').length;
     const el = document.getElementById('stDashAtt'); if (el) el.innerText = (my.length ? (pr / my.length * 100).toFixed(1) : 0) + '%';
-    const fees = await db.get('fees'), pend = fees.filter(f => String(f.student_id) === String(sid) && f.status === 'unpaid').reduce((s, f) => s + Number(f.amount), 0);
+    const fees = await db.get('fees'), pend = fees.filter(f => String(f.student_id) === String(sid) && f.status === 'unpaid').reduce((s, f) => s + (Number(f.amount)||0), 0);
     const fe = document.getElementById('stDashFees'); if (fe) fe.innerText = '₹' + pend.toFixed(2);
     const res = await db.get('results'), myR = res.filter(r => String(r.student_id) === String(sid));
-    let gp = 0; myR.forEach(r => { let g = 4; if (Number(r.marks) < 90) g = 3.7; if (Number(r.marks) < 85) g = 3.3; if (Number(r.marks) < 80) g = 3; if (Number(r.marks) < 70) g = 2; gp += g; });
+    let gp = 0; myR.forEach(r => { const m = Number(r.marks)||0; let g = 4; if (m < 90) g = 3.7; if (m < 85) g = 3.3; if (m < 80) g = 3; if (m < 70) g = 2; gp += g; });
     const ge = document.getElementById('stDashGPA'); if (ge) ge.innerText = myR.length ? (gp / myR.length).toFixed(2) : '—';
-    const tt = await db.get('timetable'), today = tt.filter(t => t.day === 'Monday').slice(0, 4);
+    const tt = await db.get('timetable'), today = tt.filter(t => String(t.day) === 'Monday').slice(0, 4);
     const tc = document.getElementById('stDashTT');
     if (tc) tc.innerHTML = today.map(t => `<div style="background:var(--primary-light);border:1px solid rgba(79,195,195,.25);border-radius:var(--radius-sm);padding:.65rem;text-align:center;"><div style="font-weight:700;font-size:.8rem;color:var(--accent-teal);">${t.subject}</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.2rem;">${t.teacher}</div><div style="font-size:.65rem;color:var(--text-bright);margin-top:.25rem;">Period ${t.period || t.start_time}</div></div>`).join('') || '<p style="color:var(--text-muted);font-size:.82rem;">No classes today.</p>';
     const notices = await db.get('notices'), nc = document.getElementById('stDashNotices');
@@ -1086,16 +1105,16 @@ const studentApp = {
     const pr = my.filter(a => a.status === 'Present').length;
     const tag = document.getElementById('attPercentTag'); if (tag) tag.innerText = my.length ? Math.round(pr / my.length * 100) + '%' : '—';
     const body = document.getElementById('studentAttTableBody'); if (!body) return;
-    body.innerHTML = my.map(a => `<tr><td style="font-weight:600;">${a.date}</td><td>${new Date(a.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })}</td><td><span class="status-badge status-${a.status === 'Present' ? 'success' : 'danger'}">${a.status}</span></td><td style="color:var(--text-muted);font-size:.75rem;">Auto-logged</td></tr>`).join('') || '<tr><td colspan="4" class="empty-state">No records found.</td></tr>';
+    body.innerHTML = my.map(a => `<tr><td style="font-weight:600;">${a.date}</td><td>${new Date(a.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })}</td><td><span class="status-badge status-${a.status === 'Present' ? 'success' : 'danger'}">${a.status}</span></td><td style="color:var(--text-muted);font-size:.75rem;">Auto-logged</td></tr>`).join('') || '<tr><td colspan=\"4\" class=\"empty-state\">No records found.</td></tr>';
   },
   async fees(sid) {
     const list = await db.get('fees'), my = list.filter(f => String(f.student_id) === String(sid));
-    const paid = my.filter(f => f.status === 'paid').reduce((s, i) => s + Number(i.amount), 0);
-    const due = my.filter(f => f.status === 'unpaid').reduce((s, i) => s + Number(i.amount), 0);
+    const paid = my.filter(f => f.status === 'paid').reduce((s, i) => s + (Number(i.amount)||0), 0);
+    const due = my.filter(f => f.status === 'unpaid').reduce((s, i) => s + (Number(i.amount)||0), 0);
     const c = document.getElementById('stFeeCards');
     if (c) c.innerHTML = `<div class="stat-card" style="color:var(--success);"><div class="stat-info"><div class="stat-label">Paid</div><div class="stat-value">₹${paid.toFixed(2)}</div></div><div class="stat-icon" style="background:var(--success-light);"><i class="fa-solid fa-circle-check"></i></div></div><div class="stat-card" style="color:var(--danger);"><div class="stat-info"><div class="stat-label">Outstanding</div><div class="stat-value">₹${due.toFixed(2)}</div></div><div class="stat-icon" style="background:var(--danger-light);"><i class="fa-solid fa-exclamation-circle"></i></div></div>`;
     const body = document.getElementById('stFeeBody'); if (!body) return;
-    body.innerHTML = my.map(f => `<tr><td style="font-weight:600;">${f.fee_type}</td><td>₹${Number(f.amount).toFixed(2)}</td><td>${f.due_date || '—'}</td><td><span class="status-badge status-${f.status === 'paid' ? 'success' : 'warning'}">${f.status}</span></td><td>${f.status === 'paid' ? `<button class="btn btn-sm btn-outline" onclick="studentApp.printReceipt('${f.fee_type}',${f.amount})"><i class="fa-solid fa-print"></i> Receipt</button>` : `<button class="btn btn-sm btn-primary" onclick="studentApp.simulatePay()"><i class="fa-solid fa-credit-card"></i> Pay</button>`}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">No records</td></tr>';
+    body.innerHTML = my.map(f => `<tr><td style="font-weight:600;">${f.fee_type}</td><td>₹${(Number(f.amount)||0).toFixed(2)}</td><td>${f.due_date || '—'}</td><td><span class="status-badge status-${f.status === 'paid' ? 'success' : 'warning'}">${f.status}</span></td><td>${f.status === 'paid' ? `<button class="btn btn-sm btn-outline" onclick="studentApp.printReceipt('${f.fee_type}',${f.amount})"><i class="fa-solid fa-print"></i> Receipt</button>` : `<button class="btn btn-sm btn-primary" onclick="studentApp.simulatePay()"><i class="fa-solid fa-credit-card"></i> Pay</button>`}</td></tr>`).join('') || '<tr><td colspan=\"5\" class=\"empty-state\">No records</td></tr>';
   },
   async simulatePay() {
     const sid = appUI.currentUser?.student_id;
@@ -1106,17 +1125,17 @@ const studentApp = {
   },
   printReceipt(type, amt) {
     const u = appUI.currentUser, t = document.getElementById('certPrintTarget'); if (!t) return;
-    t.innerHTML = `<div class="printable-receipt" style="font-family:monospace;"><div style="text-align:center;border-bottom:2px solid #333;padding-bottom:1rem;margin-bottom:1rem;"><h2>SMART SCHOOL ERP</h2><p>Payment Receipt · TXN-${Date.now().toString().slice(-6)}</p></div><p><strong>Student:</strong> ${u?.name || 'Student'}</p><p><strong>ID:</strong> ${u?.student_id || '—'}</p><p><strong>Type:</strong> ${type}</p><p><strong>Amount:</strong> ₹${Number(amt).toFixed(2)}</p><p><strong>Status:</strong> ✓ PAID</p></div>`;
+    t.innerHTML = `<div class="printable-receipt" style="font-family:monospace;"><div style="text-align:center;border-bottom:2px solid #333;padding-bottom:1rem;margin-bottom:1rem;"><h2>SMART SCHOOL ERP</h2><p>Payment Receipt · TXN-${Date.now().toString().slice(-6)}</p></div><p><strong>Student:</strong> ${u?.name || 'Student'}</p><p><strong>ID:</strong> ${u?.student_id || '—'}</p><p><strong>Type:</strong> ${type}</p><p><strong>Amount:</strong> ₹${(Number(amt)||0).toFixed(2)}</p><p><strong>Status:</strong> ✓ PAID</p></div>`;
     appUI.openModal('modalCertDisplay');
   },
   async results(sid, sem) {
     const res = await db.get('results'); let my = res.filter(r => String(r.student_id) === String(sid));
     if (sem && sem !== 'all') my = my.filter(r => String(r.semester) === String(sem));
-    let sm = 0, st = 0, gp = 0; my.forEach(r => { sm += Number(r.marks); st += Number(r.total || 100); let g = 4; if (Number(r.marks) < 90) g = 3.7; if (Number(r.marks) < 85) g = 3.3; if (Number(r.marks) < 80) g = 3; if (Number(r.marks) < 70) g = 2; gp += g; });
+    let sm = 0, st = 0, gp = 0; my.forEach(r => { const m = Number(r.marks)||0; sm += m; st += Number(r.total || 100); let g = 4; if (m < 90) g = 3.7; if (m < 85) g = 3.3; if (m < 80) g = 3; if (m < 70) g = 2; gp += g; });
     const cgpa = my.length ? (gp / my.length).toFixed(2) : '—', perc = st ? (sm / st * 100).toFixed(1) + '%' : '—';
     const ge = document.getElementById('cgpaVal'), pe = document.getElementById('percVal'); if (ge) ge.innerText = cgpa; if (pe) pe.innerText = perc;
     const body = document.getElementById('stResultBody'); if (!body) return;
-    body.innerHTML = my.map(r => `<tr><td style="font-weight:600;"><i class="fa-solid fa-book" style="color:var(--accent-amber);margin-right:4px;"></i>${r.subject}</td><td><span class="status-badge status-info">${r.semester || 'Term 2'}</span></td><td><strong>${r.marks}</strong></td><td>${r.total || 100}</td><td><span class="status-badge status-success">${r.grade || 'A'}</span></td><td><div style="display:flex;align-items:center;gap:.4rem;"><span>${r.percentage || r.marks}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;min-width:60px;overflow:hidden;"><div style="width:${r.percentage || r.marks}%;height:100%;background:linear-gradient(to right,var(--accent-teal),var(--accent-amber));"></div></div></div></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No results</td></tr>';
+    body.innerHTML = my.map(r => `<tr><td style="font-weight:600;"><i class="fa-solid fa-book" style="color:var(--accent-amber);margin-right:4px;"></i>${r.subject}</td><td><span class="status-badge status-info">${r.semester || 'Term 2'}</span></td><td><strong>${r.marks}</strong></td><td>${r.total || 100}</td><td><span class="status-badge status-success">${r.grade || 'A'}</span></td><td><div style="display:flex;align-items:center;gap:.4rem;"><span>${r.percentage || r.marks}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;min-width:60px;overflow:hidden;"><div style="width:${r.percentage || r.marks}%;height:100%;background:linear-gradient(to right,var(--accent-teal),var(--accent-amber));"></div></div></div></td></tr>`).join('') || '<tr><td colspan=\"6\" class=\"empty-state\">No results</td></tr>';
   },
   filterResults(v) { this.results(appUI.currentUser?.student_id, v); },
   printMarksheet() {
@@ -1124,7 +1143,7 @@ const studentApp = {
     db.get('results').then(list => {
       const my = list.filter(r => String(r.student_id) === String(sid));
       const rows = my.map(r => `<tr><td style="border:1px solid #ddd;padding:5px;">${r.subject}</td><td style="border:1px solid #ddd;padding:5px;">${r.marks}/${r.total || 100}</td><td style="border:1px solid #ddd;padding:5px;">${r.grade || 'A'}</td></tr>`).join('');
-      t.innerHTML = `<div class="printable-receipt"><div style="text-align:center;border-bottom:2px solid #333;padding-bottom:1rem;margin-bottom:1rem;"><h2>ACADEMIC TRANSCRIPT</h2><p>Smart School ERP</p></div><p><strong>Student:</strong> ${name} (${sid})</p><table style="width:100%;margin-top:.75rem;border-collapse:collapse;font-size:.85rem;"><thead><tr style="background:#f1f1f1;"><th style="border:1px solid #ddd;padding:6px;">Subject</th><th style="border:1px solid #ddd;padding:6px;">Marks</th><th style="border:1px solid #ddd;padding:6px;">Grade</th></tr></thead><tbody>${rows || '<tr><td colspan="3">No data</td></tr>'}</tbody></table></div>`;
+      t.innerHTML = `<div class="printable-receipt"><div style="text-align:center;border-bottom:2px solid #333;padding-bottom:1rem;margin-bottom:1rem;"><h2>ACADEMIC TRANSCRIPT</h2><p>Smart School ERP</p></div><p><strong>Student:</strong> ${name} (${sid})</p><table style="width:100%;margin-top:.75rem;border-collapse:collapse;font-size:.85rem;"><thead><tr style="background:#f1f1f1;"><th style="border:1px solid #ddd;padding:6px;">Subject</th><th style="border:1px solid #ddd;padding:6px;">Marks</th><th style="border:1px solid #ddd;padding:6px;">Grade</th></tr></thead><tbody>${rows || '<tr><td colspan=\"3\">No data</td></tr>'}</tbody></table></div>`;
       appUI.openModal('modalCertDisplay');
     });
   },
@@ -1137,7 +1156,7 @@ const studentApp = {
     
     days.forEach(d => { 
       h += `<div class="timetable-cell timetable-header" style="font-weight:700;color:var(--text-bright);">${d.slice(0, 3)}</div>`; 
-      const ds = list.filter(t => t.day === d); 
+      const ds = list.filter(t => String(t.day) === d); 
       for (let i = 1; i <= 9; i++) { 
         const s = ds.find(t => String(t.period) === String(i) || String(t.start_time) === String(i)); 
         h += s ? `<div class="timetable-cell"><div class="subject-pill">${s.subject}</div><span class="teacher-name">${s.teacher}</span></div>` : `<div class="timetable-cell" style="color:rgba(255,255,255,.15);">—</div>`; 
@@ -1206,8 +1225,8 @@ const adminApp = {
   async dash() {
     const s = await db.get('students'), f = await db.get('fees'), a = await db.get('attendance');
     document.getElementById('adTotal').innerText = s.length;
-    const col = f.filter(x => x.status === 'paid').reduce((s, i) => s + Number(i.amount), 0);
-    const pen = f.filter(x => x.status === 'unpaid').reduce((s, i) => s + Number(i.amount), 0);
+    const col = f.filter(x => x.status === 'paid').reduce((s, i) => s + (Number(i.amount)||0), 0);
+    const pen = f.filter(x => x.status === 'unpaid').reduce((s, i) => s + (Number(i.amount)||0), 0);
     document.getElementById('adFeeCol').innerText = '₹' + col.toFixed(0); document.getElementById('adFeePend').innerText = '₹' + pen.toFixed(0);
     const pr = a.filter(x => x.status === 'Present').length; document.getElementById('adAtt').innerText = (a.length ? (pr / a.length * 100).toFixed(1) : 0) + '%';
     const tb = document.getElementById('adStudRows');
@@ -1221,12 +1240,12 @@ const adminApp = {
     const fc = document.getElementById('admFilterClass')?.value || 'all';
     const fs = document.getElementById('admFilterSec')?.value || 'all';
     let f = this.cached;
-    if (q) f = f.filter(s => s.name.toLowerCase().includes(q) || s.student_id.toLowerCase().includes(q) || (s.father_name || '').toLowerCase().includes(q));
+    if (q) f = f.filter(s => String(s.name).toLowerCase().includes(q) || String(s.student_id).toLowerCase().includes(q) || String(s.father_name || '').toLowerCase().includes(q));
     if (fc !== 'all') f = f.filter(s => String(s.class) === String(fc)); 
     if (fs !== 'all') f = f.filter(s => String(s.section) === String(fs));
     
     const tb = document.getElementById('admStudBody'); if (!tb) return;
-    tb.innerHTML = f.map(s => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:700;">${s.student_id}</td><td><div style="font-weight:600;">${s.name}</div><div style="font-size:.7rem;color:var(--text-muted);">${s.email || ''}</div></td><td><span class="status-badge status-info">C${s.class}</span><div style="font-size:.7rem;color:var(--text-muted);">Sec ${s.section} / Roll ${s.roll_no}</div></td><td style="font-size:.8rem;color:var(--text-muted);">${s.father_name || '—'}</td><td style="font-size:.8rem;">${s.phone || '—'}</td><td><div style="display:flex;gap:.2rem;"><button class="btn btn-sm btn-outline" onclick="adminApp.editStudent('${s.student_id}')"><i class="fa-solid fa-pen"></i></button><button class="btn btn-sm btn-danger" onclick="adminApp.deleteStudent('${s.student_id}')"><i class="fa-solid fa-trash"></i></button></div></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No students found</td></tr>';
+    tb.innerHTML = f.map(s => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:700;">${s.student_id}</td><td><div style="font-weight:600;">${s.name}</div><div style="font-size:.7rem;color:var(--text-muted);">${s.email || ''}</div></td><td><span class="status-badge status-info">C${s.class}</span><div style="font-size:.7rem;color:var(--text-muted);">Sec ${s.section} / Roll ${s.roll_no}</div></td><td style="font-size:.8rem;color:var(--text-muted);">${s.father_name || '—'}</td><td style="font-size:.8rem;">${s.phone || '—'}</td><td><div style="display:flex;gap:.2rem;"><button class="btn btn-sm btn-outline" onclick="adminApp.editStudent('${s.student_id}')"><i class="fa-solid fa-pen"></i></button><button class="btn btn-sm btn-danger" onclick="adminApp.deleteStudent('${s.student_id}')"><i class="fa-solid fa-trash"></i></button></div></td></tr>`).join('') || '<tr><td colspan=\"6\" class=\"empty-state\">No students found</td></tr>';
   },
   openAddStudentModal() { document.getElementById('crudOrigId').value = ''; document.getElementById('stuModalTitle').innerText = 'Add Student'; document.getElementById('crudStuID').value = 'STU20260' + (Math.floor(Math.random() * 80) + 10); ['crudName', 'crudFather', 'crudEmail', 'crudPhone', 'crudRoll', 'crudAddr'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); appUI.openModal('modalAddStudent'); },
   async editStudent(sid) {
@@ -1251,7 +1270,7 @@ const adminApp = {
     const students = await db.get('students'), inCls = students.filter(s => String(s.class) === String(cls));
     const att = await db.get('attendance'), dayLogs = att.filter(a => a.date === date);
     const tb = document.getElementById('admAttBody'); if (!tb) return;
-    tb.innerHTML = inCls.map(s => { const ex = dayLogs.find(a => String(a.student_id) === String(s.student_id)), pres = ex ? ex.status === 'Present' : true; return `<tr class="att-row" data-sid="${s.student_id}"><td style="font-family:monospace;font-weight:700;color:var(--accent-teal);">${s.student_id}</td><td><strong>${s.name}</strong><br><small style="color:var(--text-muted);">Roll ${s.roll_no}</small></td><td><select class="att-sel" style="width:140px;font-weight:600;"><option value="Present" ${pres ? 'selected' : ''}>✓ Present</option><option value="Absent" ${!pres ? 'selected' : ''}>✕ Absent</option></select></td></tr>`; }).join('') || '<tr><td colspan="3" class="empty-state">No students found in Class ' + cls + '</td></tr>';
+    tb.innerHTML = inCls.map(s => { const ex = dayLogs.find(a => String(a.student_id) === String(s.student_id)), pres = ex ? ex.status === 'Present' : true; return `<tr class="att-row" data-sid="${s.student_id}"><td style="font-family:monospace;font-weight:700;color:var(--accent-teal);">${s.student_id}</td><td><strong>${s.name}</strong><br><small style="color:var(--text-muted);">Roll ${s.roll_no}</small></td><td><select class="att-sel" style="width:140px;font-weight:600;"><option value="Present" ${pres ? 'selected' : ''}>✓ Present</option><option value="Absent" ${!pres ? 'selected' : ''}>✕ Absent</option></select></td></tr>`; }).join('') || '<tr><td colspan=\"3\" class=\"empty-state\">No students found in Class ' + cls + '</td></tr>';
   },
   bulkMark(st) { document.querySelectorAll('.att-sel').forEach(s => s.value = st); appUI.showToast('All set to ' + st, 'warning'); },
   async saveAtt() {
@@ -1269,14 +1288,14 @@ const adminApp = {
   },
   async loadFees() {
     const f = await db.get('fees'), tb = document.getElementById('admFeeBody'); if (!tb) return;
-    tb.innerHTML = f.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:700;">${x.student_id}</td><td style="font-weight:600;">${x.fee_type}</td><td><strong>₹${Number(x.amount).toFixed(2)}</strong></td><td>${x.due_date || '—'}</td><td><span class="status-badge status-${x.status === 'paid' ? 'success' : 'warning'}">${x.status}</span></td><td><button class="btn btn-sm btn-outline" onclick="adminApp.toggleFee('${x.id}','${x.status}')">Toggle</button> <button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteFee('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No fees</td></tr>';
+    tb.innerHTML = f.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:700;">${x.student_id}</td><td style="font-weight:600;">${x.fee_type}</td><td><strong>₹${(Number(x.amount)||0).toFixed(2)}</strong></td><td>${x.due_date || '—'}</td><td><span class="status-badge status-${x.status === 'paid' ? 'success' : 'warning'}">${x.status}</span></td><td><button class="btn btn-sm btn-outline" onclick="adminApp.toggleFee('${x.id}','${x.status}')">Toggle</button> <button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteFee('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan=\"6\" class=\"empty-state\">No fees</td></tr>';
   },
   async saveFee(e) { e.preventDefault(); await db.insert('fees', { student_id: document.getElementById('feeStudID').value.trim(), fee_type: document.getElementById('feeType').value, amount: document.getElementById('feeAmt').value, due_date: document.getElementById('feeDue').value, status: document.getElementById('feeStat').value }); appUI.showToast('Fee added'); appUI.closeModal('modalAddFee'); this.loadFees(); },
   async toggleFee(id, cur) { if(!id) return; await db.update('fees', 'id', id, { status: cur === 'paid' ? 'unpaid' : 'paid' }); appUI.showToast('Status toggled'); this.loadFees(); },
   async deleteFee(id) { if(!id) return; await db.remove('fees', 'id', id); appUI.showToast('Fee deleted', 'danger'); this.loadFees(); },
   async loadResults() {
     const r = await db.get('results'), tb = document.getElementById('admResultBody'); if (!tb) return;
-    tb.innerHTML = r.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);">${x.student_id}</td><td style="font-weight:600;">${x.subject}</td><td><span class="status-badge status-info">${x.semester || 'Term 2'}</span></td><td><strong>${x.marks}</strong>/${x.total || 100}</td><td>${x.percentage || x.marks}%</td><td><span class="status-badge status-success">${x.grade || 'A'}</span></td><td><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteResult('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="7" class="empty-state">No results</td></tr>';
+    tb.innerHTML = r.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);">${x.student_id}</td><td style="font-weight:600;">${x.subject}</td><td><span class="status-badge status-info">${x.semester || 'Term 2'}</span></td><td><strong>${x.marks}</strong>/${x.total || 100}</td><td>${x.percentage || x.marks}%</td><td><span class="status-badge status-success">${x.grade || 'A'}</span></td><td><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteResult('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan=\"7\" class=\"empty-state\">No results</td></tr>';
   },
   async saveResult(e) {
     e.preventDefault(); const marks = Number(document.getElementById('resMarks').value), total = 100, pct = Math.round(marks / total * 100);
@@ -1287,7 +1306,7 @@ const adminApp = {
   async deleteResult(id) { if(!id) return; await db.remove('results', 'id', id); appUI.showToast('Result deleted', 'danger'); this.loadResults(); },
   async loadTT() {
     const t = await db.get('timetable'), tb = document.getElementById('admTTBody'); if (!tb) return;
-    tb.innerHTML = t.map(x => `<tr><td><span class="status-badge status-info">C${x.class}</span></td><td style="font-weight:600;">${x.day}</td><td style="color:var(--accent-teal);font-weight:600;">${x.subject}</td><td>${x.teacher}</td><td><span class="status-badge status-warning">Period ${x.period || x.start_time}</span></td><td><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteTT('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No entries</td></tr>';
+    tb.innerHTML = t.map(x => `<tr><td><span class="status-badge status-info">C${x.class}</span></td><td style="font-weight:600;">${x.day}</td><td style="color:var(--accent-teal);font-weight:600;">${x.subject}</td><td>${x.teacher}</td><td><span class="status-badge status-warning">Period ${x.period || x.start_time}</span></td><td><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteTT('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan=\"6\" class=\"empty-state\">No entries</td></tr>';
   },
   async saveTimetable(e) { e.preventDefault(); await db.insert('timetable', { class: document.getElementById('ttClass').value, section: 'A', day: document.getElementById('ttDay').value, subject: document.getElementById('ttSubj').value.trim(), teacher: document.getElementById('ttTeacher').value.trim(), period: document.getElementById('ttPeriod').value }); appUI.showToast('Slot added'); appUI.closeModal('modalAddTimetable'); this.loadTT(); },
   async deleteTT(id) { if(!id) return; await db.remove('timetable', 'id', id); appUI.showToast('Slot removed', 'danger'); this.loadTT(); },
@@ -1299,7 +1318,7 @@ const adminApp = {
   async deleteNotice(id) { if(!id) return; await db.remove('notices', 'id', id); appUI.showToast('Deleted', 'danger'); this.loadNotices(); },
   async loadCerts() {
     const c = await db.get('certificates'), tb = document.getElementById('admCertBody'); if (!tb) return;
-    tb.innerHTML = c.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);">${x.id}</td><td style="font-weight:600;">${x.student_id}</td><td><span class="status-badge status-info">${x.certificate_type}</span></td><td><span class="status-badge status-success"><i class="fa-solid fa-certificate"></i> Approved</span></td><td><button class="btn btn-sm btn-outline" onclick="studentApp.genCert('${x.certificate_type}')"><i class="fa-solid fa-eye"></i> View</button></td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">No certificates generated yet.</td></tr>';
+    tb.innerHTML = c.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);">${x.id}</td><td style="font-weight:600;">${x.student_id}</td><td><span class="status-badge status-info">${x.certificate_type}</span></td><td><span class="status-badge status-success"><i class="fa-solid fa-certificate"></i> Approved</span></td><td><button class="btn btn-sm btn-outline" onclick="studentApp.genCert('${x.certificate_type}')"><i class="fa-solid fa-eye"></i> View</button></td></tr>`).join('') || '<tr><td colspan=\"5\" class=\"empty-state\">No certificates generated yet.</td></tr>';
   },
   exportToCSV(tbl) { db.get(tbl).then(l => { if (!l.length) { appUI.showToast('No data', 'warning'); return; } const h = Object.keys(l[0]).join(','); const r = l.map(i => Object.values(i).map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(',')).join('\n'); const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(h + '\n' + r); a.download = 'export_' + tbl + '_' + Date.now() + '.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); appUI.showToast('CSV exported!'); }); }
 };
