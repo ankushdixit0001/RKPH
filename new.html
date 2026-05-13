@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart School ERP — Public Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg-deep:#07090f;--bg-mid:#0d1220;
+  --accent-amber:#f5c842;--accent-teal:#4fc3c3;--accent-rose:#e86b8a;
+  --text-bright:#f0f4ff;--text-muted:rgba(200,215,255,.65);
+  --lg-bg:rgba(255,255,255,.06);--lg-bg-hover:rgba(255,255,255,.11);
+  --lg-border:rgba(255,255,255,.15);--lg-shadow:0 8px 40px rgba(0,0,0,.55);
+  --radius-sm:14px;--radius-md:20px;--radius-lg:28px;--radius-xl:36px;
+  --primary:#4fc3c3;--primary-light:rgba(79,195,195,.15);
+  --success:#4fc3c3;--success-light:rgba(79,195,195,.12);
+  --warning:#f5c842;--warning-light:rgba(245,200,66,.12);
+  --danger:#e86b8a;--danger-light:rgba(232,107,138,.12);
+  --transition:all .3s ease;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+h1,h2,h3,h4,.page-title,.panel-title,.auth-title,.modal-title,.sidebar-brand,.pub-hero-title,.section-title{
+  font-family:'Cormorant Garamond',serif!important;letter-spacing:.03em;font-weight:700;
+}
+body{background:var(--bg-deep);color:var(--text-bright);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;position:relative;}
+body::before,body::after{content:'';position:fixed;width:55vw;height:55vw;border-radius:50%;filter:blur(140px);z-index:0;animation:floatOrb 18s ease-in-out infinite alternate;opacity:.28;pointer-events:none;}
+body::before{background:radial-gradient(circle,var(--accent-teal),transparent 65%);top:-20%;left:-15%;}
+body::after{background:radial-gradient(circle,var(--accent-rose),transparent 65%);bottom:-20%;right:-15%;animation-delay:-9s;animation-duration:22s;}
+@keyframes floatOrb{0%{transform:translate(0,0) scale(1)}50%{transform:translate(80px,60px) scale(1.1)}100%{transform:translate(-40px,120px) scale(1.2)}}
+a{text-decoration:none;color:inherit;}
+button{cursor:pointer;border:none;outline:none;background:none;font-size:.9rem;font-weight:600;border-radius:var(--radius-md);transition:var(--transition);font-family:'DM Sans',sans-serif;}
+input,select,textarea{width:100%;padding:.75rem 1.25rem;border:1px solid var(--lg-border);border-radius:var(--radius-sm);background:var(--lg-bg);backdrop-filter:blur(12px);color:var(--text-bright);font-size:.95rem;outline:none;transition:var(--transition);font-family:'DM Sans',sans-serif;}
+input::placeholder,textarea::placeholder{color:rgba(240,244,255,.4);}
+select option{background:var(--bg-mid);color:var(--text-bright);}
+input:focus,select:focus,textarea:focus{border-color:var(--accent-teal);box-shadow:0 0 20px rgba(79,195,195,.3);background:var(--lg-bg-hover);}
+.view-panel{display:none;width:100%;position:relative;z-index:1;}
+.view-panel.active{display:block;animation:smoothFade .35s ease forwards;}
+@keyframes smoothFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem 1.5rem;font-weight:700;border-radius:var(--radius-sm);transition:var(--transition);text-align:center;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#fff 0%,#eef2ff 100%);color:var(--bg-deep);box-shadow:0 4px 20px rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.8);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,255,255,.35);}
+.btn-outline,.btn-secondary{background:var(--lg-bg);backdrop-filter:blur(12px);border:1px solid var(--lg-border);color:var(--text-bright);box-shadow:0 4px 15px rgba(0,0,0,.2);}
+.btn-outline:hover,.btn-secondary:hover{border-color:var(--accent-teal);box-shadow:0 0 20px rgba(79,195,195,.3);transform:translateY(-2px);background:var(--lg-bg-hover);}
+.btn-teal{background:linear-gradient(135deg,var(--accent-teal),#2fa8a8);color:var(--bg-deep);box-shadow:0 4px 15px rgba(79,195,195,.35);}
+.btn-teal:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(79,195,195,.5);}
+.btn-amber{background:linear-gradient(135deg,var(--accent-amber),#c9a020);color:var(--bg-deep);box-shadow:0 4px 15px rgba(245,200,66,.35);}
+.btn-amber:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(245,200,66,.5);}
+.btn-danger{background:var(--danger);color:#fff;box-shadow:0 4px 15px rgba(232,107,138,.3);}
+.btn-danger:hover{box-shadow:0 0 20px rgba(232,107,138,.5);transform:translateY(-2px);}
+.btn-success{background:var(--success);color:var(--bg-deep);box-shadow:0 4px 15px rgba(79,195,195,.3);}
+.btn-sm{padding:.35rem .7rem;font-size:.75rem;}
+.btn-full{width:100%;}
+
+/* ══════════════════════════════════════
+   PUBLIC PORTAL STYLES
+══════════════════════════════════════ */
+.pub-nav{position:sticky;top:0;z-index:50;background:rgba(7,9,15,.75);backdrop-filter:blur(20px);border-bottom:1px solid var(--lg-border);padding:.85rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.pub-nav-brand{display:flex;align-items:center;gap:.75rem;}
+.pub-nav-logo{width:40px;height:40px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 0 18px rgba(79,195,195,.3);}
+.pub-nav-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:var(--text-bright);text-shadow:0 0 12px rgba(79,195,195,.3);}
+.pub-nav-links{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.pub-nav-link{padding:.45rem 1rem;border-radius:var(--radius-sm);font-size:.82rem;font-weight:600;color:var(--text-muted);border:1px solid transparent;transition:var(--transition);cursor:pointer;}
+.pub-nav-link:hover{color:var(--text-bright);background:var(--lg-bg);border-color:var(--lg-border);}
+.pub-nav-link.active{color:var(--accent-teal);background:var(--primary-light);border-color:rgba(79,195,195,.3);}
+
+.pub-hero{min-height:88vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden;}
+.pub-hero::before{content:'';position:absolute;width:40vw;height:40vw;border-radius:50%;background:radial-gradient(circle,var(--accent-amber),transparent 70%);filter:blur(120px);opacity:.18;top:10%;left:30%;z-index:0;animation:floatOrb 14s ease-in-out infinite alternate-reverse;}
+.pub-hero-inner{position:relative;z-index:1;max-width:780px;}
+.pub-hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--primary-light);border:1px solid rgba(79,195,195,.35);padding:.35rem 1rem;border-radius:2rem;font-size:.78rem;font-weight:600;color:var(--accent-teal);margin-bottom:1.5rem;letter-spacing:.05em;}
+.pub-hero-title{font-size:clamp(2.4rem,6vw,4rem);color:var(--text-bright);line-height:1.15;margin-bottom:1rem;}
+.pub-hero-title span{background:linear-gradient(135deg,var(--accent-teal),var(--accent-amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.pub-hero-sub{font-size:1.05rem;color:var(--text-muted);line-height:1.7;margin-bottom:2.5rem;max-width:580px;margin-left:auto;margin-right:auto;}
+.pub-hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
+.pub-hero-stats{display:flex;gap:2rem;justify-content:center;margin-top:3rem;flex-wrap:wrap;}
+.pub-stat-item{text-align:center;}
+.pub-stat-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--accent-teal);}
+.pub-stat-label{font-size:.75rem;color:var(--text-muted);margin-top:.15rem;}
+
+.pub-section{padding:4rem 2rem;max-width:1200px;margin:0 auto;}
+.section-title{font-size:2rem;color:var(--text-bright);margin-bottom:.5rem;}
+.section-sub{font-size:.9rem;color:var(--text-muted);margin-bottom:2rem;}
+.section-divider{width:60px;height:3px;background:linear-gradient(to right,var(--accent-teal),var(--accent-amber));border-radius:2px;margin-bottom:2rem;}
+
+.glass-card{background:var(--lg-bg);backdrop-filter:blur(14px);border:1px solid var(--lg-border);border-radius:var(--radius-md);box-shadow:var(--lg-shadow);transition:var(--transition);overflow:hidden;}
+.glass-card:hover{border-color:rgba(79,195,195,.3);box-shadow:0 12px 50px rgba(0,0,0,.65);}
+
+.pub-notice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem;}
+.pub-notice-card{background:var(--lg-bg);backdrop-filter:blur(14px);border:1px solid var(--lg-border);border-radius:var(--radius-md);padding:1.5rem;border-left:4px solid var(--primary);transition:var(--transition);position:relative;overflow:hidden;}
+.pub-notice-card:hover{transform:translateY(-3px);background:var(--lg-bg-hover);border-color:rgba(79,195,195,.3);}
+.pub-notice-card.high{border-left-color:var(--danger);}
+.pub-notice-card.medium{border-left-color:var(--warning);}
+.pub-notice-card.low{border-left-color:var(--success);}
+.pub-notice-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.06;background:currentColor;}
+.pub-notice-tag{display:inline-flex;align-items:center;padding:.15rem .55rem;border-radius:1rem;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.65rem;}
+.pub-notice-tag.high{background:var(--danger-light);color:var(--danger);}
+.pub-notice-tag.medium{background:var(--warning-light);color:var(--warning);}
+.pub-notice-tag.low{background:var(--success-light);color:var(--success);}
+.pub-notice-title{font-size:1.05rem;font-weight:700;color:var(--text-bright);margin-bottom:.5rem;line-height:1.3;}
+.pub-notice-desc{font-size:.82rem;color:var(--text-muted);line-height:1.55;}
+.pub-notice-meta{display:flex;gap:1rem;margin-top:.85rem;font-size:.72rem;color:var(--text-muted);}
+
+.pub-tt-wrapper{overflow-x:auto;}
+.pub-tt-table{width:100%;border-collapse:collapse;min-width:700px;}
+.pub-tt-table th{padding:.85rem 1rem;background:rgba(79,195,195,.1);color:var(--accent-teal);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--lg-border);text-align:center;}
+.pub-tt-table td{padding:.7rem 1rem;border-bottom:1px solid rgba(255,255,255,.05);text-align:center;font-size:.85rem;vertical-align:middle;}
+.pub-tt-table tbody tr:hover{background:rgba(79,195,195,.04);}
+.tt-subject-badge{display:inline-block;background:var(--primary-light);color:var(--primary);padding:.2rem .6rem;border-radius:8px;font-weight:600;font-size:.78rem;}
+.tt-free{color:rgba(255,255,255,.15);font-size:.8rem;}
+
+.result-lookup-box{background:var(--lg-bg);backdrop-filter:blur(16px);border:1px solid var(--lg-border);border-radius:var(--radius-lg);padding:2rem;max-width:600px;margin:0 auto;}
+.result-lookup-box h3{font-size:1.4rem;margin-bottom:.5rem;color:var(--text-bright);}
+.result-lookup-box p{font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem;}
+.lookup-result-card{background:rgba(79,195,195,.07);border:1px solid rgba(79,195,195,.2);border-radius:var(--radius-md);padding:1.5rem;margin-top:1.5rem;animation:smoothFade .3s ease;}
+.lookup-subject-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.lookup-subject-row:last-child{border-bottom:none;}
+.lookup-subject-name{font-weight:600;font-size:.88rem;}
+.lookup-grade-badge{font-weight:800;font-size:1rem;color:var(--accent-teal);}
+.lookup-progress{height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:.3rem;overflow:hidden;}
+.lookup-progress-fill{height:100%;background:linear-gradient(to right,var(--accent-teal),var(--accent-amber));border-radius:3px;transition:width .6s ease;}
+
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem;}
+.info-card{background:var(--lg-bg);backdrop-filter:blur(12px);border:1px solid var(--lg-border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;transition:var(--transition);}
+.info-card:hover{transform:translateY(-3px);border-color:rgba(79,195,195,.3);}
+.info-card-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 1rem;}
+.info-card-title{font-size:1rem;font-weight:700;margin-bottom:.35rem;}
+.info-card-text{font-size:.8rem;color:var(--text-muted);line-height:1.5;}
+
+.pub-footer{background:rgba(13,18,32,.8);backdrop-filter:blur(12px);border-top:1px solid var(--lg-border);padding:2rem;text-align:center;position:relative;z-index:1;}
+.pub-footer-logo{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;margin-bottom:.5rem;}
+.pub-footer-text{font-size:.78rem;color:var(--text-muted);}
+
+.class-pills{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+.class-pill{padding:.4rem 1rem;border-radius:2rem;font-size:.78rem;font-weight:600;border:1px solid var(--lg-border);color:var(--text-muted);background:var(--lg-bg);cursor:pointer;transition:var(--transition);}
+.class-pill:hover,.class-pill.active{background:var(--primary-light);color:var(--accent-teal);border-color:rgba(79,195,195,.4);}
+
+/* ══════════════════════════════════════
+   AUTH PANEL STYLES
+══════════════════════════════════════ */
+.auth-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;position:relative;}
+.auth-wrapper::before{content:'';position:absolute;width:35vw;height:35vw;border-radius:50%;background:radial-gradient(circle,var(--accent-amber),transparent 70%);filter:blur(120px);opacity:.18;top:20%;left:35%;z-index:0;animation:floatOrb 12s ease-in-out infinite alternate-reverse;}
+.auth-card{background:rgba(13,18,32,.7);backdrop-filter:blur(28px);border-radius:var(--radius-lg);box-shadow:var(--lg-shadow);width:100%;max-width:460px;overflow:hidden;border:1px solid var(--lg-border);animation:smoothFade .4s ease-out;position:relative;z-index:2;}
+.auth-header{padding:2rem 2rem 1rem;text-align:center;}
+.auth-logo{width:60px;height:60px;background:var(--primary-light);color:var(--primary);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.75rem;margin-bottom:1rem;box-shadow:0 0 25px rgba(79,195,195,.3);}
+.auth-title{font-size:1.55rem;color:var(--text-bright);}
+.auth-subtitle{font-size:.875rem;color:var(--text-muted);margin-top:.25rem;}
+.auth-tabs{display:flex;border-bottom:1px solid var(--lg-border);margin:0 2rem 1.5rem;}
+.auth-tab{flex:1;padding:.75rem;text-align:center;font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;transition:var(--transition);cursor:pointer;}
+.auth-tab:hover{color:var(--text-bright);}
+.auth-tab.active{color:var(--accent-teal);border-bottom-color:var(--accent-teal);}
+.auth-body{padding:0 2rem 2rem;}
+.form-group{margin-bottom:1.15rem;position:relative;}
+.form-label{display:block;font-size:.82rem;font-weight:600;margin-bottom:.4rem;color:var(--text-bright);}
+.password-input-wrap{position:relative;}
+.toggle-password{position:absolute;right:1rem;top:50%;transform:translateY(-50%);color:var(--text-muted);cursor:pointer;}
+.auth-options{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;margin-bottom:1.5rem;}
+.custom-checkbox{display:flex;align-items:center;gap:.5rem;color:var(--text-muted);cursor:pointer;}
+.auth-switch-text{text-align:center;margin-top:1.2rem;font-size:.82rem;color:var(--text-muted);}
+.auth-switch-text a{color:var(--accent-teal);font-weight:600;}
+
+/* ══════════════════════════════════════
+   ERP APP SHELL STYLES
+══════════════════════════════════════ */
+.app-container{display:flex;min-height:100vh;width:100%;position:relative;z-index:1;}
+.sidebar{width:256px;background:rgba(13,18,32,.6);backdrop-filter:blur(20px);color:var(--text-bright);display:flex;flex-direction:column;transition:var(--transition);z-index:100;border-right:1px solid var(--lg-border);flex-shrink:0;box-shadow:5px 0 25px rgba(0,0,0,.3);}
+.sidebar-header{padding:1.5rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid var(--lg-border);}
+.sidebar-brand{font-size:1.2rem;color:var(--text-bright);text-shadow:0 0 10px rgba(79,195,195,.4);}
+.sidebar-menu{list-style:none;padding:1rem 0;overflow-y:auto;flex:1;}
+.menu-label{padding:.7rem 1.5rem .25rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:700;}
+.menu-item{margin:.12rem .65rem;}
+.menu-link{display:flex;align-items:center;gap:.875rem;padding:.6rem 1rem;color:var(--text-muted);font-weight:500;border-radius:var(--radius-sm);transition:var(--transition);font-size:.88rem;border:1px solid transparent;}
+.menu-link:hover{color:var(--text-bright);background:var(--lg-bg-hover);border-color:rgba(79,195,195,.2);transform:translateX(3px);}
+.menu-link.active{color:var(--bg-deep);background:linear-gradient(135deg,var(--accent-teal),var(--accent-amber));font-weight:700;box-shadow:0 4px 15px rgba(79,195,195,.4);}
+.menu-link i{font-size:.95rem;width:18px;transition:var(--transition);}
+.menu-link:hover i{color:var(--accent-teal);}
+.menu-link.active i{color:var(--bg-deep);}
+.sidebar-footer{padding:.85rem;border-top:1px solid var(--lg-border);}
+.user-widget{display:flex;align-items:center;gap:.65rem;padding:.45rem;background:var(--lg-bg);border-radius:var(--radius-sm);border:1px solid var(--lg-border);}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent-rose),var(--accent-amber));color:var(--bg-deep);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;box-shadow:0 0 10px rgba(232,107,138,.3);flex-shrink:0;}
+.user-details{flex:1;min-width:0;}
+.user-name{font-size:.82rem;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-size:.68rem;color:var(--accent-teal);text-transform:capitalize;font-weight:500;}
+.main-content{flex:1;min-width:0;display:flex;flex-direction:column;background:transparent;}
+.top-navbar{height:62px;background:rgba(13,18,32,.5);backdrop-filter:blur(20px);border-bottom:1px solid var(--lg-border);display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;position:sticky;top:0;z-index:30;box-shadow:0 4px 30px rgba(0,0,0,.25);}
+.nav-left{display:flex;align-items:center;gap:.85rem;}
+.sidebar-toggle{font-size:1.2rem;color:var(--text-bright);display:none;}
+.search-bar{position:relative;width:260px;}
+.search-bar i{position:absolute;left:1.1rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.82rem;}
+.search-bar input{padding:.55rem .85rem .55rem 2.4rem;border-radius:2rem;font-size:.82rem;}
+.nav-right{display:flex;align-items:center;gap:.85rem;}
+.icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-bright);background:var(--lg-bg);border:1px solid var(--lg-border);position:relative;transition:var(--transition);font-size:.88rem;cursor:pointer;}
+.icon-btn:hover{border-color:var(--accent-teal);box-shadow:0 0 14px rgba(79,195,195,.3);color:var(--accent-teal);}
+.badge{position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;font-size:.58rem;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.content-body{padding:1.75rem;flex:1;overflow-y:auto;}
+
+/* ERP Dashboard internals */
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem;flex-wrap:wrap;gap:1rem;}
+.page-title{font-size:1.45rem;color:var(--text-bright);}
+.page-breadcrumb{font-size:.82rem;color:var(--text-muted);margin-top:.2rem;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.15rem;margin-bottom:1.75rem;}
+.stat-card{background:var(--lg-bg);backdrop-filter:blur(12px);border:1px solid var(--lg-border);border-radius:var(--radius-md);padding:1.35rem;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--lg-shadow);transition:var(--transition);position:relative;overflow:hidden;}
+.stat-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.22);}
+.stat-info{z-index:1;}
+.stat-label{font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:.4rem;}
+.stat-value{font-size:1.6rem;font-weight:800;color:var(--text-bright);font-family:'Cormorant Garamond',serif;}
+.stat-desc{font-size:.7rem;font-weight:500;margin-top:.4rem;display:flex;align-items:center;gap:.25rem;}
+.stat-desc.trend-up{color:var(--success);}
+.stat-desc.trend-down{color:var(--danger);}
+.stat-icon{width:46px;height:46px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.3rem;z-index:1;}
+.stat-card::before{content:'';position:absolute;right:-10px;bottom:-10px;width:80px;height:80px;border-radius:50%;opacity:.06;background:currentColor;}
+.card-grid-2{display:grid;grid-template-columns:2fr 1fr;gap:1.15rem;margin-bottom:1.75rem;}
+@media(max-width:1024px){.card-grid-2{grid-template-columns:1fr;}}
+.panel-card{background:var(--lg-bg);backdrop-filter:blur(12px);border:1px solid var(--lg-border);border-radius:var(--radius-md);box-shadow:var(--lg-shadow);overflow:hidden;display:flex;flex-direction:column;}
+.panel-header{padding:1rem 1.35rem;border-bottom:1px solid var(--lg-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.65rem;}
+.panel-title{font-size:1rem;display:flex;align-items:center;gap:.45rem;color:var(--text-bright);}
+.panel-body{padding:1.15rem;flex:1;}
+.table-responsive{overflow-x:auto;width:100%;}
+.custom-table{width:100%;border-collapse:collapse;text-align:left;font-size:.84rem;}
+.custom-table th{padding:.75rem 1.1rem;background:rgba(255,255,255,.03);color:var(--text-muted);font-weight:600;font-size:.69rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--lg-border);}
+.custom-table td{padding:.8rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text-bright);vertical-align:middle;}
+.custom-table tr:last-child td{border-bottom:none;}
+.custom-table tbody tr{transition:var(--transition);}
+.custom-table tbody tr:hover{background:rgba(79,195,195,.04);}
+.status-badge{display:inline-flex;align-items:center;padding:.18rem .55rem;border-radius:1rem;font-size:.69rem;font-weight:600;text-transform:capitalize;}
+.status-success{background:var(--success-light);color:var(--success);}
+.status-warning{background:var(--warning-light);color:var(--warning);}
+.status-danger{background:var(--danger-light);color:var(--danger);}
+.status-info{background:var(--primary-light);color:var(--primary);}
+.filter-toolbar{display:flex;gap:.85rem;margin-bottom:1.35rem;flex-wrap:wrap;background:var(--lg-bg);padding:.85rem;border-radius:var(--radius-sm);border:1px solid var(--lg-border);}
+.filter-item{flex:1;min-width:160px;}
+
+.notice-card{padding:1rem;border-left:4px solid var(--primary);background:var(--lg-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-bottom:.75rem;transition:var(--transition);border-top:1px solid var(--lg-border);border-right:1px solid var(--lg-border);border-bottom:1px solid var(--lg-border);}
+.notice-card:hover{transform:translateX(4px);background:var(--lg-bg-hover);}
+.notice-card.high{border-left-color:var(--danger);}
+.notice-card.medium{border-left-color:var(--warning);}
+.notice-card.low{border-left-color:var(--success);}
+.notice-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;flex-wrap:wrap;gap:.45rem;}
+.notice-title{font-weight:600;font-size:.9rem;color:var(--text-bright);}
+.notice-desc{font-size:.78rem;color:var(--text-muted);line-height:1.5;}
+
+.timetable-grid{display:grid;grid-template-columns:90px repeat(9,1fr);gap:1px;background:var(--lg-border);border:1px solid var(--lg-border);border-radius:var(--radius-sm);overflow:hidden;}
+.timetable-cell{background:var(--lg-bg);padding:.55rem;text-align:center;min-height:65px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:.72rem;}
+.timetable-header{background:rgba(255,255,255,.03);font-weight:700;color:var(--text-muted);min-height:38px;}
+.subject-pill{background:var(--primary-light);color:var(--primary);padding:.18rem .4rem;border-radius:7px;font-weight:600;margin-bottom:.18rem;width:100%;overflow:hidden;text-overflow:ellipsis;font-size:.68rem;}
+.teacher-name{font-size:.62rem;color:var(--text-muted);}
+
+/* Modals */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(7,9,15,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:200;padding:1rem;}
+.modal-overlay.active{display:flex;}
+.modal-container{background:rgba(13,18,32,.92);backdrop-filter:blur(25px);border-radius:var(--radius-md);width:100%;max-width:650px;max-height:90vh;overflow-y:auto;box-shadow:var(--lg-shadow);border:1px solid var(--lg-border);}
+.modal-header{padding:1.1rem 1.4rem;border-bottom:1px solid var(--lg-border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(13,18,32,.96);z-index:10;}
+.modal-title{font-size:1.15rem;color:var(--text-bright);}
+.modal-body{padding:1.4rem;}
+.modal-footer{padding:.9rem 1.4rem;border-top:1px solid var(--lg-border);display:flex;justify-content:flex-end;gap:.65rem;position:sticky;bottom:0;background:rgba(13,18,32,.96);}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+@media(max-width:600px){.form-grid-2{grid-template-columns:1fr;}}
+
+/* Toast */
+.toast-container{position:fixed;bottom:1.75rem;right:1.75rem;z-index:1000;display:flex;flex-direction:column;gap:.65rem;}
+.toast{min-width:280px;max-width:400px;background:rgba(13,18,32,.92);backdrop-filter:blur(20px);border-left:4px solid var(--primary);padding:.85rem 1.1rem;border-radius:var(--radius-sm);box-shadow:var(--lg-shadow);display:flex;align-items:center;justify-content:space-between;gap:.65rem;animation:slideIn .3s ease;border:1px solid var(--lg-border);}
+.toast.success{border-left-color:var(--success);}
+.toast.danger{border-left-color:var(--danger);}
+.toast.warning{border-left-color:var(--warning);}
+@keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Certificate Styles */
+.printable-receipt{padding:2rem;background:#fff;color:#0F172A;border:2px dashed #CBD5E1;border-radius:var(--radius-sm);}
+.cert-container{
+  background:#fff; color:#0F172A; padding:40px; text-align:center; position:relative;
+  border: 12px solid #e2e8f0; outline: 4px solid #0F172A; outline-offset: -16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Cormorant Garamond', serif;
+}
+.cert-container::before{
+  content: '\f5d2'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+  position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+  font-size:250px; color:rgba(79, 195, 195, 0.05); z-index:0; pointer-events:none;
+}
+.cert-content{position:relative; z-index:1;}
+.cert-header{border-bottom:2px solid #0F172A; padding-bottom:15px; margin-bottom:20px;}
+.cert-logo{font-size:3.5rem; color:#0F172A; margin-bottom:10px;}
+.cert-school-name{font-size:2.4rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin:0; color:#0F172A;}
+.cert-sub{font-size:1rem; color:#475569; font-family:'DM Sans', sans-serif;}
+.cert-title{font-size:2rem; font-weight:700; color:#0F172A; margin:20px 0; text-decoration:underline; text-underline-offset:6px;}
+.cert-body{font-size:1.3rem; line-height:2.2; margin:30px 0;}
+.cert-name{font-size:1.6rem; font-weight:700; border-bottom:1px dashed #0F172A; padding:0 15px;}
+.cert-footer{display:flex; justify-content:space-between; align-items:flex-end; margin-top:50px; padding-top:20px;}
+.cert-signature{border-top:1px solid #0F172A; width:200px; padding-top:5px; font-size:1rem; font-weight:600;}
+.cert-qr{width:80px; height:80px; border:2px solid #0F172A; background:repeating-linear-gradient(45deg, #0F172A, #0F172A 4px, #fff 4px, #fff 8px); opacity:0.8;}
+
+/* Responsive Enhancements */
+@media(max-width:768px){
+  .sidebar{position:fixed;top:0;bottom:0;left:-260px;z-index:100;}
+  .sidebar.open{left:0;}
+  .sidebar-toggle{display:block!important;}
+  .top-navbar{padding:0 1rem;}
+  .content-body{padding:1rem;}
+  .search-bar{width:160px;}
+  .page-header{flex-direction:column;align-items:flex-start;}
+  .pub-nav{padding:.75rem 1rem;}
+  .pub-nav-links{gap:.25rem;}
+  .pub-nav-link{padding:.35rem .65rem;font-size:.76rem;}
+  .pub-hero{min-height:70vh;padding:3rem 1.25rem;}
+  .pub-hero-stats{gap:1.25rem;}
+  .pub-section{padding:2.5rem 1.25rem;}
+  .timetable-grid{overflow-x:auto;display:block;white-space:nowrap;}
+  .auth-wrapper{padding:1rem;}
+  .auth-tabs{margin:0 1rem 1rem;}
+  .auth-body{padding:0 1.5rem 1.5rem;}
+}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text-muted);}
+.empty-state i{font-size:2.5rem;margin-bottom:.75rem;opacity:.3;display:block;}
+.mobile-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:90;}
+.mobile-overlay.active{display:block;}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="mobile-overlay" id="mobileOverlay" onclick="appUI.closeSidebar()"></div>
+
+<div class="view-panel active" id="public-view">
+
+  <nav class="pub-nav">
+    <div class="pub-nav-brand">
+      <div class="pub-nav-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+      <span class="pub-nav-name">SmartSchool ERP</span>
+    </div>
+    <div class="pub-nav-links">
+      <span class="pub-nav-link active" data-pub="home" onclick="publicPortal.show('home')"><i class="fa-solid fa-house"></i> Home</span>
+      <span class="pub-nav-link" data-pub="notices" onclick="publicPortal.show('notices')"><i class="fa-solid fa-bullhorn"></i> Notices</span>
+      <span class="pub-nav-link" data-pub="timetable" onclick="publicPortal.show('timetable')"><i class="fa-solid fa-table-cells"></i> Timetable</span>
+      <span class="pub-nav-link" data-pub="results" onclick="publicPortal.show('results')"><i class="fa-solid fa-award"></i> Results</span>
+      <span class="pub-nav-link" data-pub="about" onclick="publicPortal.show('about')"><i class="fa-solid fa-circle-info"></i> About</span>
+      <button class="btn btn-teal btn-sm" onclick="appUI.switchView('auth-view')" style="margin-left:.5rem;"><i class="fa-solid fa-lock"></i> Staff Login</button>
+    </div>
+  </nav>
+
+  <div id="pubContent">
+    <section id="pub-home" class="pub-section-wrap">
+      <div class="pub-hero">
+        <div class="pub-hero-inner">
+          <div class="pub-hero-badge"><i class="fa-solid fa-star"></i> Established 1985 · CBSE Affiliated</div>
+          <h1 class="pub-hero-title">Welcome to <span>SmartSchool</span> — Excellence in Education</h1>
+          <p class="pub-hero-sub">Empowering students with knowledge, values, and innovation. Access timetables, results, and notices — all in one place, open to everyone.</p>
+          <div class="pub-hero-btns">
+            <button class="btn btn-teal" onclick="publicPortal.show('notices')"><i class="fa-solid fa-bullhorn"></i> View Notices</button>
+            <button class="btn btn-amber" onclick="publicPortal.show('results')"><i class="fa-solid fa-magnifying-glass"></i> Check Results</button>
+            <button class="btn btn-outline" onclick="publicPortal.show('timetable')"><i class="fa-solid fa-table-cells"></i> Timetable</button>
+          </div>
+          <div class="pub-hero-stats">
+            <div class="pub-stat-item"><div class="pub-stat-num" id="heroStatStudents">0</div><div class="pub-stat-label">Students Enrolled</div></div>
+            <div class="pub-stat-item"><div class="pub-stat-num">38</div><div class="pub-stat-label">Expert Faculty</div></div>
+            <div class="pub-stat-item"><div class="pub-stat-num" id="heroStatNotices">0</div><div class="pub-stat-label">Active Notices</div></div>
+            <div class="pub-stat-item"><div class="pub-stat-num">99%</div><div class="pub-stat-label">Pass Rate</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pub-section" style="padding-top:0;">
+        <div class="info-grid">
+          <div class="info-card" onclick="publicPortal.show('notices')" style="cursor:pointer;">
+            <div class="info-card-icon" style="background:var(--danger-light);color:var(--danger);"><i class="fa-solid fa-bullhorn"></i></div>
+            <div class="info-card-title">Latest Notices</div>
+            <div class="info-card-text">Stay updated with exam schedules, holidays, and important announcements.</div>
+          </div>
+          <div class="info-card" onclick="publicPortal.show('timetable')" style="cursor:pointer;">
+            <div class="info-card-icon" style="background:var(--primary-light);color:var(--primary);"><i class="fa-solid fa-table-cells"></i></div>
+            <div class="info-card-title">Class Timetable</div>
+            <div class="info-card-text">View weekly subject schedules for all classes from Nursery to 12.</div>
+          </div>
+          <div class="info-card" onclick="publicPortal.show('results')" style="cursor:pointer;">
+            <div class="info-card-icon" style="background:var(--warning-light);color:var(--warning);"><i class="fa-solid fa-award"></i></div>
+            <div class="info-card-title">Result Lookup</div>
+            <div class="info-card-text">Enter your Student ID to instantly check your marks and grades.</div>
+          </div>
+          <div class="info-card" onclick="appUI.switchView('auth-view')" style="cursor:pointer;">
+            <div class="info-card-icon" style="background:rgba(232,107,138,.12);color:var(--accent-rose);"><i class="fa-solid fa-lock-open"></i></div>
+            <div class="info-card-title">Staff / Student Login</div>
+            <div class="info-card-text">Access the full ERP panel for attendance, fees, certificates, and more.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:3rem;">
+          <div class="section-title">Recent Announcements</div>
+          <div class="section-divider"></div>
+          <div class="pub-notice-grid" id="homeNoticePreview"></div>
+          <div style="text-align:center;margin-top:1.5rem;">
+            <button class="btn btn-outline" onclick="publicPortal.show('notices')">View All Notices <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pub-notices" class="pub-section-wrap" style="display:none;">
+      <div class="pub-section">
+        <div class="section-title"><i class="fa-solid fa-bullhorn" style="color:var(--accent-teal);"></i> School Notices & Announcements</div>
+        <div class="section-divider"></div>
+        <p class="section-sub">All official school announcements, exam schedules, holiday notices and emergency alerts.</p>
+        <div style="display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+          <button class="class-pill active" data-filter="all" onclick="publicPortal.filterNotices('all',this)">All</button>
+          <button class="class-pill" data-filter="high" onclick="publicPortal.filterNotices('high',this)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> Emergency</button>
+          <button class="class-pill" data-filter="medium" onclick="publicPortal.filterNotices('medium',this)"><i class="fa-solid fa-clock" style="color:var(--warning);"></i> Exams</button>
+          <button class="class-pill" data-filter="low" onclick="publicPortal.filterNotices('low',this)"><i class="fa-solid fa-circle-info" style="color:var(--success);"></i> General</button>
+        </div>
+        <div class="pub-notice-grid" id="pubNoticeGrid"></div>
+      </div>
+    </section>
+
+    <section id="pub-timetable" class="pub-section-wrap" style="display:none;">
+      <div class="pub-section">
+        <div class="section-title"><i class="fa-solid fa-table-cells" style="color:var(--accent-amber);"></i> Class Timetable</div>
+        <div class="section-divider"></div>
+        <p class="section-sub">Weekly subject schedule for all classes. Select your class to view the timetable (9 Periods).</p>
+        <div class="class-pills" id="classPills">
+          <button class="class-pill" data-cls="Nursery" onclick="publicPortal.loadTimetable('Nursery',this)">Nursery</button>
+          <button class="class-pill" data-cls="LKG" onclick="publicPortal.loadTimetable('LKG',this)">LKG</button>
+          <button class="class-pill" data-cls="UKG" onclick="publicPortal.loadTimetable('UKG',this)">UKG</button>
+          <button class="class-pill" data-cls="1" onclick="publicPortal.loadTimetable('1',this)">Class 1</button>
+          <button class="class-pill" data-cls="2" onclick="publicPortal.loadTimetable('2',this)">Class 2</button>
+          <button class="class-pill" data-cls="3" onclick="publicPortal.loadTimetable('3',this)">Class 3</button>
+          <button class="class-pill" data-cls="4" onclick="publicPortal.loadTimetable('4',this)">Class 4</button>
+          <button class="class-pill" data-cls="5" onclick="publicPortal.loadTimetable('5',this)">Class 5</button>
+          <button class="class-pill" data-cls="6" onclick="publicPortal.loadTimetable('6',this)">Class 6</button>
+          <button class="class-pill" data-cls="7" onclick="publicPortal.loadTimetable('7',this)">Class 7</button>
+          <button class="class-pill" data-cls="8" onclick="publicPortal.loadTimetable('8',this)">Class 8</button>
+          <button class="class-pill" data-cls="9" onclick="publicPortal.loadTimetable('9',this)">Class 9</button>
+          <button class="class-pill active" data-cls="10" onclick="publicPortal.loadTimetable('10',this)">Class 10</button>
+          <button class="class-pill" data-cls="11" onclick="publicPortal.loadTimetable('11',this)">Class 11</button>
+          <button class="class-pill" data-cls="12" onclick="publicPortal.loadTimetable('12',this)">Class 12</button>
+        </div>
+        <div class="glass-card" style="padding:1.5rem;">
+          <div class="pub-tt-wrapper" id="pubTimetableWrap">
+            <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading timetable…</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pub-results" class="pub-section-wrap" style="display:none;">
+      <div class="pub-section">
+        <div class="section-title"><i class="fa-solid fa-award" style="color:var(--accent-amber);"></i> Student Result Lookup</div>
+        <div class="section-divider"></div>
+        <p class="section-sub">Enter your Student ID to view your academic results publicly.</p>
+        <div class="result-lookup-box">
+          <h3>Check Your Results</h3>
+          <p>Results are publicly accessible. Enter the Student ID provided at admission.</p>
+          <div class="form-group">
+            <label class="form-label">Student ID</label>
+            <input type="text" id="pubResultID" placeholder="e.g. STU2026001" style="font-size:1rem;" onkeyup="if(event.key==='Enter')publicPortal.lookupResult()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Term (Optional)</label>
+            <select id="pubResultSem">
+              <option value="all">All Terms</option>
+              <option value="Term 1">Term 1 (Half Yearly)</option>
+              <option value="Term 2">Term 2 (Annual)</option>
+            </select>
+          </div>
+          <button class="btn btn-teal btn-full" onclick="publicPortal.lookupResult()"><i class="fa-solid fa-magnifying-glass"></i> Lookup Results</button>
+          <div id="pubResultOutput"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pub-about" class="pub-section-wrap" style="display:none;">
+      <div class="pub-section">
+        <div class="section-title">About SmartSchool</div>
+        <div class="section-divider"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;" class="form-grid-2">
+          <div>
+            <p style="font-size:.95rem;line-height:1.8;color:var(--text-muted);margin-bottom:1.25rem;">SmartSchool is a premier educational institution committed to academic excellence, holistic development, and nurturing future leaders. Established in 1985, we have served thousands of students across multiple generations.</p>
+            <p style="font-size:.95rem;line-height:1.8;color:var(--text-muted);">Our state-of-the-art facilities, dedicated faculty, and innovative curriculum create an environment where every student can thrive and reach their full potential.</p>
+          </div>
+          <div class="info-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="info-card"><div class="info-card-icon" style="background:var(--primary-light);color:var(--primary);"><i class="fa-solid fa-phone"></i></div><div class="info-card-title">Contact</div><div class="info-card-text">+91 98765 43210</div></div>
+            <div class="info-card"><div class="info-card-icon" style="background:var(--warning-light);color:var(--warning);"><i class="fa-solid fa-envelope"></i></div><div class="info-card-title">Email</div><div class="info-card-text">info@smartschool.in</div></div>
+            <div class="info-card"><div class="info-card-icon" style="background:var(--danger-light);color:var(--danger);"><i class="fa-solid fa-location-dot"></i></div><div class="info-card-title">Address</div><div class="info-card-text">Sector 14, Education City, New Delhi</div></div>
+            <div class="info-card"><div class="info-card-icon" style="background:var(--success-light);color:var(--success);"><i class="fa-solid fa-clock"></i></div><div class="info-card-title">Hours</div><div class="info-card-text">Mon–Sat 8:00 AM–2:00 PM</div></div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:2rem;background:var(--lg-bg);border-radius:var(--radius-md);border:1px solid var(--lg-border);">
+          <p style="font-size:.95rem;color:var(--text-muted);margin-bottom:1rem;">Access the full School Management System</p>
+          <button class="btn btn-teal" onclick="appUI.switchView('auth-view')"><i class="fa-solid fa-right-to-bracket"></i> Login to ERP Portal</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="pub-footer">
+    <div class="pub-footer-logo">SmartSchool ERP</div>
+    <div class="pub-footer-text">© 2026 SmartSchool. All rights reserved. | Powered by Supabase</div>
+    <div style="margin-top:.75rem;display:flex;justify-content:center;gap:1rem;font-size:.78rem;color:var(--text-muted);">
+      <span onclick="publicPortal.show('notices')" style="cursor:pointer;color:var(--accent-teal);">Notices</span>
+      <span onclick="publicPortal.show('timetable')" style="cursor:pointer;color:var(--accent-teal);">Timetable</span>
+      <span onclick="publicPortal.show('results')" style="cursor:pointer;color:var(--accent-teal);">Results</span>
+      <span onclick="appUI.switchView('auth-view')" style="cursor:pointer;color:var(--accent-teal);">Staff Login</span>
+    </div>
+  </footer>
+</div>
+
+<div class="view-panel" id="auth-view">
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h1 class="auth-title">ERP Staff Portal</h1>
+        <p class="auth-subtitle">Secure Admin & Student Access</p>
+      </div>
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="authApp.switchAuthTab(this,'student')">Student</div>
+        <div class="auth-tab" onclick="authApp.switchAuthTab(this,'admin')">Administrator</div>
+      </div>
+      <div class="auth-body" id="loginFormContainer">
+        <form onsubmit="authApp.handleLogin(event)">
+          <div class="form-group"><label class="form-label">Email</label><input type="email" id="loginEmail" required value="rahul@example.com"></div>
+          <div class="form-group"><label class="form-label">Password</label>
+            <div class="password-input-wrap">
+              <input type="password" id="loginPassword" required value="123456">
+              <i class="fa-regular fa-eye toggle-password" onclick="authApp.togglePass(this,'loginPassword')"></i>
+            </div>
+          </div>
+          <div class="auth-options">
+            <label class="custom-checkbox"><input type="checkbox" id="rememberMe" checked><span>Remember me</span></label>
+            <a href="#" onclick="event.preventDefault();alert('Reset link sent!')" style="color:var(--accent-teal);font-weight:600;font-size:.82rem;">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+        </form>
+        <div style="margin-top:1rem;padding:.65rem;background:var(--lg-bg);border-radius:var(--radius-sm);font-size:.7rem;color:var(--text-muted);border:1px solid var(--lg-border);">
+          <strong style="color:var(--accent-amber);">Demo Accounts:</strong><br>
+          Student: <code style="color:var(--accent-teal);">student@smartschool.in</code> / <code>password123</code><br>
+          Admin: <code style="color:var(--accent-teal);">admin@smartschool.in</code> / <code>admin123</code>
+        </div>
+        <div class="auth-switch-text">
+          <a href="#" onclick="event.preventDefault();authApp.showRegisterForm()">Register new account</a> &nbsp;·&nbsp;
+          <a href="#" onclick="event.preventDefault();appUI.switchView('public-view')"><i class="fa-solid fa-globe"></i> Back to Public Portal</a>
+        </div>
+      </div>
+      <div class="auth-body" id="registerFormContainer" style="display:none;">
+        <form onsubmit="authApp.handleRegister(event)">
+          <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="regName" required></div>
+          <div class="form-group"><label class="form-label">Email</label><input type="email" id="regEmail" required></div>
+          <div class="form-group"><label class="form-label">Role</label><select id="regRole"><option value="student">Student</option><option value="admin">Admin</option></select></div>
+          <div class="form-group"><label class="form-label">Password</label><div class="password-input-wrap"><input type="password" id="regPassword" required><i class="fa-regular fa-eye toggle-password" onclick="authApp.togglePass(this,'regPassword')"></i></div></div>
+          <button type="submit" class="btn btn-primary btn-full"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+        </form>
+        <div class="auth-switch-text"><a href="#" onclick="event.preventDefault();authApp.showLoginForm()">Back to Sign In</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="view-panel" id="main-app-view">
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <div class="auth-logo" style="width:32px;height:32px;font-size:.88rem;margin-bottom:0;"><i class="fa-solid fa-graduation-cap"></i></div>
+        <span class="sidebar-brand">SmartSchool</span>
+      </div>
+      <ul class="sidebar-menu" id="sidebarMenu"></ul>
+      <div class="sidebar-footer">
+        <div class="user-widget">
+          <div class="user-avatar" id="sidebarAvatar">S</div>
+          <div class="user-details">
+            <div class="user-name" id="sidebarUserName">User</div>
+            <div class="user-role" id="sidebarUserRole">Student</div>
+          </div>
+          <button class="icon-btn" style="width:26px;height:26px;color:var(--danger);font-size:.7rem;" onclick="authApp.logout()"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+      </div>
+    </aside>
+    <main class="main-content">
+      <nav class="top-navbar">
+        <div class="nav-left">
+          <button class="sidebar-toggle" onclick="appUI.toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+          <div class="search-bar"><i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Search…" onkeyup="appUI.handleGlobalSearch(this.value)"></div>
+        </div>
+        <div class="nav-right">
+          <button class="btn btn-sm btn-outline" onclick="appUI.switchView('public-view')" style="font-size:.72rem;padding:.28rem .65rem;"><i class="fa-solid fa-globe"></i> Public Site</button>
+          <button class="icon-btn" onclick="appUI.openModal('modalNotifications')"><i class="fa-regular fa-bell"></i><span class="badge">3</span></button>
+        </div>
+      </nav>
+      <div class="content-body" id="appContentBody"></div>
+    </main>
+  </div>
+</div>
+
+<template id="tpl-student-dashboard">
+<div class="page-header"><div><h2 class="page-title">Student Dashboard</h2><p class="page-breadcrumb">Welcome back, <span class="inject-sname">Student</span>!</p></div></div>
+<div class="stats-grid">
+  <div class="stat-card" style="color:var(--accent-teal);"><div class="stat-info"><div class="stat-label">Attendance</div><div class="stat-value" id="stDashAtt">—</div><div class="stat-desc trend-up"><i class="fa-solid fa-arrow-trend-up"></i> Overall</div></div><div class="stat-icon" style="background:var(--primary-light);"><i class="fa-solid fa-calendar-check"></i></div></div>
+  <div class="stat-card" style="color:var(--accent-rose);"><div class="stat-info"><div class="stat-label">Pending Fees</div><div class="stat-value" id="stDashFees">—</div><div class="stat-desc"><i class="fa-solid fa-receipt"></i> Outstanding</div></div><div class="stat-icon" style="background:var(--danger-light);"><i class="fa-solid fa-file-invoice-dollar"></i></div></div>
+  <div class="stat-card" style="color:var(--accent-amber);"><div class="stat-info"><div class="stat-label">CGPA</div><div class="stat-value" id="stDashGPA">—</div><div class="stat-desc trend-up"><i class="fa-solid fa-award"></i> Latest</div></div><div class="stat-icon" style="background:var(--warning-light);"><i class="fa-solid fa-graduation-cap"></i></div></div>
+  <div class="stat-card" style="color:var(--text-bright);"><div class="stat-info"><div class="stat-label">Upcoming Exams</div><div class="stat-value">2</div><div class="stat-desc"><i class="fa-solid fa-clock"></i> In 5 days</div></div><div class="stat-icon" style="background:var(--lg-bg-hover);"><i class="fa-solid fa-book-open"></i></div></div>
+</div>
+<div class="card-grid-2">
+  <div class="panel-card"><div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-table-cells"></i> Today's Classes</h3><button class="btn btn-sm btn-outline" onclick="appUI.loadModule('student-timetable')">Full Schedule</button></div><div class="panel-body"><div id="stDashTT" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.65rem;"></div></div></div>
+  <div class="panel-card"><div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-bullhorn"></i> Latest Notices</h3></div><div class="panel-body" id="stDashNotices"></div></div>
+</div>
+</template>
+
+<template id="tpl-student-attendance">
+<div class="page-header"><div><h2 class="page-title">Attendance History</h2><p class="page-breadcrumb">Your attendance record</p></div><span class="status-badge status-success" style="font-size:.82rem;">Rate: <strong id="attPercentTag" style="margin-left:3px;">—</strong></span></div>
+<div class="panel-card"><div class="panel-header"><h3 class="panel-title"><i class="fa-regular fa-calendar-days"></i> Logs</h3></div><div class="table-responsive"><table class="custom-table"><thead><tr><th>Date</th><th>Day</th><th>Status</th><th>Note</th></tr></thead><tbody id="studentAttTableBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-student-fees">
+<div class="page-header"><div><h2 class="page-title">Fees & Invoices</h2><p class="page-breadcrumb">Payment history</p></div><button class="btn btn-success" onclick="studentApp.simulatePay()"><i class="fa-solid fa-credit-card"></i> Pay Outstanding</button></div>
+<div class="stats-grid" id="stFeeCards"></div>
+<div class="panel-card" style="margin-top:1rem;"><div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-receipt"></i> Records</h3></div><div class="table-responsive"><table class="custom-table"><thead><tr><th>Type</th><th>Amount</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="stFeeBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-student-results">
+<div class="page-header"><div><h2 class="page-title">Results & Grades</h2><p class="page-breadcrumb">Academic performance</p></div><button class="btn btn-outline" onclick="studentApp.printMarksheet()"><i class="fa-solid fa-file-pdf"></i> Download</button></div>
+<div class="filter-toolbar" style="justify-content:space-between;align-items:center;"><div><span class="status-badge status-info" style="font-size:.82rem;">CGPA: <strong id="cgpaVal">—</strong></span><span class="status-badge status-success" style="font-size:.82rem;margin-left:.4rem;">Avg: <strong id="percVal">—</strong></span></div><select style="width:auto;" onchange="studentApp.filterResults(this.value)"><option value="all">All Terms</option><option value="Term 1">Term 1 (Half Yearly)</option><option value="Term 2">Term 2 (Annual)</option></select></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>Subject</th><th>Term</th><th>Marks</th><th>Total</th><th>Grade</th><th>%</th></tr></thead><tbody id="stResultBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-student-timetable">
+<div class="page-header"><div><h2 class="page-title">Weekly Timetable</h2><p class="page-breadcrumb">Your class schedule</p></div></div>
+<div class="panel-card"><div class="panel-body" style="padding:0;overflow:auto;"><div class="timetable-grid" id="stTTContainer"></div></div></div>
+</template>
+
+<template id="tpl-student-certificates">
+<div class="page-header"><div><h2 class="page-title">Certificates</h2><p class="page-breadcrumb">Generate official documents</p></div></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.15rem;">
+  <div class="panel-card" style="padding:1.5rem;text-align:center;"><i class="fa-solid fa-file-contract" style="font-size:2.2rem;color:var(--accent-teal);margin-bottom:.65rem;"></i><h3 style="margin-bottom:.35rem;">Bonafide</h3><p style="font-size:.78rem;color:var(--text-muted);margin-bottom:1rem;">Confirms enrollment.</p><button class="btn btn-primary" onclick="studentApp.genCert('Bonafide Certificate')">Generate PDF</button></div>
+  <div class="panel-card" style="padding:1.5rem;text-align:center;"><i class="fa-solid fa-user-shield" style="font-size:2.2rem;color:var(--accent-amber);margin-bottom:.65rem;"></i><h3 style="margin-bottom:.35rem;">Character</h3><p style="font-size:.78rem;color:var(--text-muted);margin-bottom:1rem;">Good conduct record.</p><button class="btn btn-primary" onclick="studentApp.genCert('Character Certificate')">Generate PDF</button></div>
+  <div class="panel-card" style="padding:1.5rem;text-align:center;"><i class="fa-solid fa-paper-plane" style="font-size:2.2rem;color:var(--accent-rose);margin-bottom:.65rem;"></i><h3 style="margin-bottom:.35rem;">Transfer (TC)</h3><p style="font-size:.78rem;color:var(--text-muted);margin-bottom:1rem;">For school transfers.</p><button class="btn btn-primary" onclick="studentApp.genCert('Transfer Certificate')">Generate PDF</button></div>
+</div>
+</template>
+
+<template id="tpl-student-notices">
+<div class="page-header"><div><h2 class="page-title">Notices</h2><p class="page-breadcrumb">School announcements</p></div></div>
+<div class="panel-card"><div class="panel-body" id="stNoticeContainer"></div></div>
+</template>
+
+<template id="tpl-student-profile">
+<div class="page-header"><div><h2 class="page-title">My Profile</h2></div></div>
+<div class="panel-card"><div class="panel-body"><div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1.75rem;"><div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent-teal),var(--accent-amber));color:var(--bg-deep);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;box-shadow:0 0 18px rgba(79,195,195,.35);"><i class="fa-solid fa-user-graduate"></i></div><div><h3 style="font-size:1.3rem;" id="profName">—</h3><p style="color:var(--text-muted);font-size:.82rem;">ID: <strong id="profID">—</strong></p><span class="status-badge status-success">Active</span></div></div><div class="form-grid-2"><div class="form-group"><label class="form-label">Email</label><input readonly id="profEmail"></div><div class="form-group"><label class="form-label">Phone</label><input readonly id="profPhone"></div><div class="form-group"><label class="form-label">Class</label><input readonly id="profClass"></div><div class="form-group"><label class="form-label">Section</label><input readonly id="profSection"></div><div class="form-group"><label class="form-label">Roll No</label><input readonly id="profRoll"></div><div class="form-group"><label class="form-label">DOB</label><input readonly id="profDOB"></div></div></div></div>
+</template>
+
+<template id="tpl-admin-dashboard">
+<div class="page-header"><div><h2 class="page-title">Admin Dashboard</h2><p class="page-breadcrumb">System overview</p></div><div style="display:flex;gap:.5rem;"><button class="btn btn-primary" onclick="adminApp.openAddStudentModal()"><i class="fa-solid fa-plus"></i> Add Student</button><button class="btn btn-outline" onclick="adminApp.exportToCSV('students')"><i class="fa-solid fa-file-excel"></i> Export</button></div></div>
+<div class="stats-grid">
+  <div class="stat-card" style="color:var(--accent-teal);"><div class="stat-info"><div class="stat-label">Students</div><div class="stat-value" id="adTotal">0</div><div class="stat-desc trend-up"><i class="fa-solid fa-users"></i> Active</div></div><div class="stat-icon" style="background:var(--primary-light);"><i class="fa-solid fa-users"></i></div></div>
+  <div class="stat-card" style="color:var(--accent-amber);"><div class="stat-info"><div class="stat-label">Fees Collected</div><div class="stat-value" id="adFeeCol">₹0</div><div class="stat-desc trend-up"><i class="fa-solid fa-wallet"></i> This term</div></div><div class="stat-icon" style="background:var(--warning-light);"><i class="fa-solid fa-hand-holding-dollar"></i></div></div>
+  <div class="stat-card" style="color:var(--accent-rose);"><div class="stat-info"><div class="stat-label">Pending Fees</div><div class="stat-value" id="adFeePend">₹0</div><div class="stat-desc trend-down"><i class="fa-solid fa-exclamation-circle"></i> Due</div></div><div class="stat-icon" style="background:var(--danger-light);"><i class="fa-solid fa-scale-unbalanced"></i></div></div>
+  <div class="stat-card" style="color:var(--text-bright);"><div class="stat-info"><div class="stat-label">Attendance</div><div class="stat-value" id="adAtt">0%</div><div class="stat-desc"><i class="fa-solid fa-check-double"></i> Average</div></div><div class="stat-icon" style="background:var(--lg-bg-hover);"><i class="fa-solid fa-chart-line"></i></div></div>
+</div>
+<div class="card-grid-2">
+  <div class="panel-card"><div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-user-check"></i> Recent Students</h3><button class="btn btn-sm btn-outline" onclick="appUI.loadModule('admin-students')">All</button></div><div class="table-responsive"><table class="custom-table"><thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Actions</th></tr></thead><tbody id="adStudRows"></tbody></table></div></div>
+  <div class="panel-card"><div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-bell"></i> Notices</h3><button class="btn btn-sm btn-outline" onclick="appUI.loadModule('admin-notices')">Add</button></div><div class="panel-body" id="adNoticeStream"></div></div>
+</div>
+</template>
+
+<template id="tpl-admin-students">
+<div class="page-header"><div><h2 class="page-title">Student Management</h2></div><button class="btn btn-primary" onclick="adminApp.openAddStudentModal()"><i class="fa-solid fa-user-plus"></i> Enroll</button></div>
+<div class="filter-toolbar"><div class="filter-item" style="flex:2;"><input type="text" placeholder="Search by name, ID…" id="admStudSearch" onkeyup="adminApp.filterStudents()"></div><div class="filter-item">
+<select id="admFilterClass" onchange="adminApp.filterStudents()">
+  <option value="all">All Classes</option>
+  <option value="Nursery">Nursery</option><option value="LKG">LKG</option><option value="UKG">UKG</option>
+  <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+  <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+  <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+  <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+</select>
+</div><div class="filter-item"><select id="admFilterSec" onchange="adminApp.filterStudents()"><option value="all">All Sections</option><option value="A">Section A</option><option value="B">Section B</option><option value="C">Section C</option></select></div></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>ID</th><th>Student</th><th>Class</th><th>Father's Name</th><th>Phone</th><th>Actions</th></tr></thead><tbody id="admStudBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-admin-attendance">
+<div class="page-header"><div><h2 class="page-title">Attendance</h2></div></div>
+<div class="filter-toolbar" style="align-items:flex-end;"><div class="filter-item"><label class="form-label" style="margin:0 0 .3rem;">Date</label><input type="date" id="admAttDate" value="2026-03-15" onchange="adminApp.loadAttGrid()"></div><div class="filter-item"><label class="form-label" style="margin:0 0 .3rem;">Class</label>
+<select id="admAttClass" onchange="adminApp.loadAttGrid()">
+  <option value="Nursery">Nursery</option><option value="LKG">LKG</option><option value="UKG">UKG</option>
+  <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+  <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+  <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+  <option value="10" selected>Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+</select>
+</div><div style="display:flex;gap:.5rem;"><button class="btn btn-outline btn-sm" onclick="adminApp.bulkMark('Present')">All Present</button><button class="btn btn-outline btn-sm" onclick="adminApp.bulkMark('Absent')">All Absent</button></div></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>ID</th><th>Student</th><th>Status</th></tr></thead><tbody id="admAttBody"></tbody></table></div><div style="padding:.85rem 1.25rem;border-top:1px solid var(--lg-border);text-align:right;"><button class="btn btn-primary" onclick="adminApp.saveAtt()"><i class="fa-solid fa-floppy-disk"></i> Save / Update</button></div></div>
+</template>
+
+<template id="tpl-admin-fees">
+<div class="page-header"><div><h2 class="page-title">Fees Management</h2></div><button class="btn btn-primary" onclick="appUI.openModal('modalAddFee')"><i class="fa-solid fa-plus"></i> Add Fee</button></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>Student</th><th>Type</th><th>Amount</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead><tbody id="admFeeBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-admin-results">
+<div class="page-header"><div><h2 class="page-title">Results</h2></div><button class="btn btn-primary" onclick="appUI.openModal('modalAddResult')"><i class="fa-solid fa-plus"></i> Add Result</button></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>Student</th><th>Subject</th><th>Term</th><th>Marks</th><th>%</th><th>Grade</th><th>Del</th></tr></thead><tbody id="admResultBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-admin-timetable">
+<div class="page-header"><div><h2 class="page-title">Timetable (9 Periods)</h2></div><button class="btn btn-primary" onclick="appUI.openModal('modalAddTimetable')"><i class="fa-solid fa-plus"></i> Add Slot</button></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>Class</th><th>Day</th><th>Subject</th><th>Teacher</th><th>Period</th><th>Del</th></tr></thead><tbody id="admTTBody"></tbody></table></div></div>
+</template>
+
+<template id="tpl-admin-notices">
+<div class="page-header"><div><h2 class="page-title">Notices</h2></div><button class="btn btn-primary" onclick="appUI.openModal('modalAddNotice')"><i class="fa-solid fa-plus"></i> Post</button></div>
+<div class="panel-card"><div class="panel-body" id="admNoticeBody"></div></div>
+</template>
+
+<template id="tpl-admin-certificates">
+<div class="page-header"><div><h2 class="page-title">Certificates</h2></div></div>
+<div class="panel-card"><div class="table-responsive"><table class="custom-table"><thead><tr><th>ID</th><th>Student</th><th>Type</th><th>Status</th><th>View</th></tr></thead><tbody id="admCertBody"></tbody></table></div></div>
+</template>
+
+<div class="modal-overlay" id="modalAddStudent"><div class="modal-container"><div class="modal-header"><h3 class="modal-title" id="stuModalTitle">Add Student</h3><button onclick="appUI.closeModal('modalAddStudent')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><form onsubmit="adminApp.saveStudent(event)"><input type="hidden" id="crudOrigId"><div class="modal-body form-grid-2"><div class="form-group"><label class="form-label">Student ID *</label><input type="text" id="crudStuID" required></div><div class="form-group"><label class="form-label">Full Name *</label><input type="text" id="crudName" required></div><div class="form-group"><label class="form-label">Father's Name</label><input type="text" id="crudFather"></div><div class="form-group"><label class="form-label">Email *</label><input type="email" id="crudEmail" required></div><div class="form-group"><label class="form-label">Phone</label><input type="text" id="crudPhone" placeholder="+91 "></div><div class="form-group"><label class="form-label">Class *</label>
+<select id="crudClass">
+  <option value="Nursery">Nursery</option><option value="LKG">LKG</option><option value="UKG">UKG</option>
+  <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+  <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+  <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+  <option value="10" selected>Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+</select>
+</div><div class="form-group"><label class="form-label">Section</label><select id="crudSection"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div><div class="form-group"><label class="form-label">Roll No *</label><input type="text" id="crudRoll" required></div><div class="form-group"><label class="form-label">DOB</label><input type="date" id="crudDOB"></div><div class="form-group"><label class="form-label">Gender</label><select id="crudGender"><option>Male</option><option>Female</option><option>Other</option></select></div><div class="form-group" style="grid-column:span 2;"><label class="form-label">Address</label><textarea id="crudAddr" rows="2"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="appUI.closeModal('modalAddStudent')">Cancel</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button></div></form></div></div>
+
+<div class="modal-overlay" id="modalAddFee"><div class="modal-container" style="max-width:480px;"><div class="modal-header"><h3 class="modal-title">Add Fee</h3><button onclick="appUI.closeModal('modalAddFee')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><form onsubmit="adminApp.saveFee(event)"><div class="modal-body"><div class="form-group"><label class="form-label">Student ID *</label><input type="text" id="feeStudID" required></div><div class="form-group"><label class="form-label">Type</label><select id="feeType"><option>Tuition Fee</option><option>Library Fee</option><option>Transport Fee</option><option>Annual Fee</option><option>Fine</option></select></div><div class="form-group"><label class="form-label">Amount (₹) *</label><input type="number" id="feeAmt" required step="1"></div><div class="form-group"><label class="form-label">Due Date</label><input type="date" id="feeDue" value="2026-04-30"></div><div class="form-group"><label class="form-label">Status</label><select id="feeStat"><option value="unpaid">Unpaid</option><option value="paid">Paid</option></select></div></div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="appUI.closeModal('modalAddFee')">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form></div></div>
+
+<div class="modal-overlay" id="modalAddResult"><div class="modal-container" style="max-width:480px;"><div class="modal-header"><h3 class="modal-title">Add Result</h3><button onclick="appUI.closeModal('modalAddResult')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><form onsubmit="adminApp.saveResult(event)"><div class="modal-body"><div class="form-group"><label class="form-label">Student ID *</label><input type="text" id="resStudID" required></div><div class="form-group"><label class="form-label">Subject</label><select id="resSubject"><option>English</option><option>Hindi</option><option>Mathematics</option><option>Science</option><option>Social Science</option><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Accountancy</option><option>Business Studies</option><option>Computer Science</option></select></div><div class="form-group"><label class="form-label">Term</label><select id="resSem"><option value="Term 1">Term 1</option><option value="Term 2" selected>Term 2</option></select></div><div class="form-group"><label class="form-label">Marks (out of 100) *</label><input type="number" id="resMarks" required max="100" min="0"></div></div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="appUI.closeModal('modalAddResult')">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form></div></div>
+
+<div class="modal-overlay" id="modalAddNotice"><div class="modal-container" style="max-width:500px;"><div class="modal-header"><h3 class="modal-title">Post Notice</h3><button onclick="appUI.closeModal('modalAddNotice')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><form onsubmit="adminApp.saveNotice(event)"><div class="modal-body"><div class="form-group"><label class="form-label">Title *</label><input type="text" id="notTitle" required></div><div class="form-group"><label class="form-label">Priority</label><select id="notType"><option value="high">High / Emergency</option><option value="medium" selected>Medium / Exam</option><option value="low">Low / General</option></select></div><div class="form-group"><label class="form-label">Description *</label><textarea id="notDesc" rows="4" required></textarea></div><div class="form-group"><label class="form-label">Expiry Date</label><input type="date" id="notExpiry" value="2026-06-01"></div></div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="appUI.closeModal('modalAddNotice')">Cancel</button><button type="submit" class="btn btn-primary">Publish</button></div></form></div></div>
+
+<div class="modal-overlay" id="modalAddTimetable"><div class="modal-container" style="max-width:480px;"><div class="modal-header"><h3 class="modal-title">Add Timetable Slot</h3><button onclick="appUI.closeModal('modalAddTimetable')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><form onsubmit="adminApp.saveTimetable(event)"><div class="modal-body"><div class="form-group"><label class="form-label">Class</label>
+<select id="ttClass">
+  <option value="Nursery">Nursery</option><option value="LKG">LKG</option><option value="UKG">UKG</option>
+  <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+  <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+  <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+  <option value="10" selected>Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+</select>
+</div><div class="form-group"><label class="form-label">Day</label><select id="ttDay"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select></div><div class="form-group"><label class="form-label">Subject *</label><input type="text" id="ttSubj" required></div><div class="form-group"><label class="form-label">Teacher *</label><input type="text" id="ttTeacher" required></div><div class="form-group"><label class="form-label">Period (1 to 9) *</label>
+<select id="ttPeriod">
+  <option value="1">Period 1 (08:00 - 08:40)</option>
+  <option value="2">Period 2 (08:40 - 09:20)</option>
+  <option value="3">Period 3 (09:20 - 10:00)</option>
+  <option value="4">Period 4 (10:00 - 10:40)</option>
+  <option value="5">Period 5 (10:40 - 11:20)</option>
+  <option value="6">Period 6 (11:20 - 12:00)</option>
+  <option value="7">Period 7 (12:00 - 12:40)</option>
+  <option value="8">Period 8 (12:40 - 13:20)</option>
+  <option value="9">Period 9 (13:20 - 14:00)</option>
+</select>
+</div></div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="appUI.closeModal('modalAddTimetable')">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form></div></div>
+
+<div class="modal-overlay" id="modalNotifications"><div class="modal-container" style="max-width:420px;"><div class="modal-header"><h3 class="modal-title"><i class="fa-regular fa-bell"></i> Notifications</h3><button onclick="appUI.closeModal('modalNotifications')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" style="padding:.85rem;"><div style="display:flex;flex-direction:column;gap:.4rem;"><div style="padding:.6rem;border-bottom:1px solid var(--lg-border);"><div style="font-weight:600;font-size:.8rem;">🔒 Secure Login</div><div style="font-size:.7rem;color:var(--text-muted);">Session active.</div></div><div style="padding:.6rem;border-bottom:1px solid var(--lg-border);"><div style="font-weight:600;font-size:.8rem;color:var(--accent-teal);">📡 Supabase Connected</div><div style="font-size:.7rem;color:var(--text-muted);">Live database active.</div></div><div style="padding:.6rem;"><div style="font-weight:600;font-size:.8rem;color:var(--accent-amber);">⚡ System Ready</div><div style="font-size:.7rem;color:var(--text-muted);">All modules operational.</div></div></div></div></div></div>
+
+<div class="modal-overlay" id="modalCertDisplay"><div class="modal-container" style="max-width:750px;"><div class="modal-header"><h3 class="modal-title"><i class="fa-solid fa-print"></i> Document Preview</h3><button onclick="appUI.closeModal('modalCertDisplay')" style="color:var(--text-muted);font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" id="certPrintTarget" style="background:#f1f5f9;"></div><div class="modal-footer"><button class="btn btn-outline" onclick="appUI.closeModal('modalCertDisplay')">Close</button><button class="btn btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Document</button></div></div></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   STORAGE DRIVER (Strictly Supabase)
+═══════════════════════════════════════════ */
+const SUPA_URL = 'https://kdunwrltevydwjkhblqx.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdW53cmx0ZXZ5ZHdqa2hibHF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTM0OTYsImV4cCI6MjA5NDIyOTQ5Nn0.iFLXH_JR9vrjKitAXgggFzfsG0r074LkRjihFyOUbDc';
+
+class StorageDriver {
+  constructor() {
+    this.sb = null;
+    try {
+      this.sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    } catch(e) {
+      console.error("Supabase failed to initialize", e);
+    }
+  }
+  async get(tbl) {
+    if (!this.sb) return [];
+    try {
+      const { data, error } = await this.sb.from(tbl).select('*');
+      if (error) { console.error("DB Fetch Error:", error); return []; }
+      return data || [];
+    } catch (e) { console.error(e); return []; }
+  }
+  async insert(tbl, rec) {
+    if (!this.sb) return null;
+    try {
+      const { data, error } = await this.sb.from(tbl).insert([rec]).select();
+      if (error) { console.error("DB Insert Error:", error); appUI.showToast('DB Error: ' + error.message, 'danger'); return null; }
+      return data ? data[0] : null;
+    } catch (e) { console.error(e); return null; }
+  }
+  async update(tbl, f, v, u) {
+    if (!this.sb) return;
+    try {
+      const { error } = await this.sb.from(tbl).update(u).eq(f, v);
+      if (error) { console.error("DB Update Error:", error); appUI.showToast('DB Error: ' + error.message, 'danger'); }
+    } catch (e) { console.error(e); }
+  }
+  async remove(tbl, f, v) {
+    if (!this.sb) return;
+    try {
+      const { error } = await this.sb.from(tbl).delete().eq(f, v);
+      if (error) { console.error("DB Delete Error:", error); appUI.showToast('DB Error: ' + error.message, 'danger'); }
+    } catch (e) { console.error(e); }
+  }
+}
+const db = new StorageDriver();
+
+/* ═══════════════════════════════════════════
+   PUBLIC PORTAL (No Login Required)
+═══════════════════════════════════════════ */
+const publicPortal = {
+  allNotices: [],
+  async boot() {
+    const students = await db.get('students');
+    const notices = await db.get('notices');
+    this.allNotices = notices;
+    const sEl = document.getElementById('heroStatStudents');
+    const nEl = document.getElementById('heroStatNotices');
+    if (sEl) sEl.innerText = students.length;
+    if (nEl) nEl.innerText = notices.length;
+    this._renderNoticeCards(document.getElementById('homeNoticePreview'), notices.slice(0, 3));
+  },
+  show(section) {
+    document.querySelectorAll('.pub-section-wrap').forEach(s => s.style.display = 'none');
+    const target = document.getElementById('pub-' + section);
+    if (target) target.style.display = 'block';
+    
+    document.querySelectorAll('.pub-nav-link').forEach(l => {
+      l.classList.toggle('active', l.getAttribute('data-pub') === section);
+    });
+    
+    if (section === 'notices') this.loadAllNotices();
+    else if (section === 'timetable') this.loadTimetable('10', document.querySelector('.class-pill[data-cls="10"]'));
+    else if (section === 'results') { document.getElementById('pubResultOutput').innerHTML = ''; }
+  },
+  loadAllNotices() {
+    db.get('notices').then(list => {
+      this.allNotices = list;
+      this._renderNoticeCards(document.getElementById('pubNoticeGrid'), list);
+    });
+  },
+  filterNotices(type, btn) {
+    document.querySelectorAll('.class-pill').forEach(p => p.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    const filtered = type === 'all' ? this.allNotices : this.allNotices.filter(n => n.type === type);
+    this._renderNoticeCards(document.getElementById('pubNoticeGrid'), filtered);
+  },
+  _renderNoticeCards(el, notices) {
+    if (!el) return;
+    if (!notices || !notices.length) { el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-bullhorn"></i><p>No notices found.</p></div>'; return; }
+    el.innerHTML = notices.map(n => `
+      <div class="pub-notice-card ${n.type}">
+        <div class="pub-notice-tag ${n.type}">${n.type === 'high' ? '🚨 Emergency' : n.type === 'medium' ? '📋 Exam / Event' : '📢 General'}</div>
+        <div class="pub-notice-title">${n.title}</div>
+        <div class="pub-notice-desc">${n.description}</div>
+        <div class="pub-notice-meta">
+          <span><i class="fa-regular fa-calendar"></i> ${new Date(n.created_at).toLocaleDateString() || 'Recent'}</span>
+          <span><i class="fa-solid fa-clock"></i> Expires: ${n.expiry_date || '—'}</span>
+        </div>
+      </div>
+    `).join('');
+  },
+  loadTimetable(cls, btn) {
+    if (btn) {
+      document.querySelectorAll('#classPills .class-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    const wrap = document.getElementById('pubTimetableWrap');
+    if (!wrap) return;
+    db.get('timetable').then(list => {
+      const clsList = list.filter(t => String(t.class) === String(cls));
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      
+      if (!clsList.length) { wrap.innerHTML = '<div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No timetable entries for Class ' + cls + '.</p></div>'; return; }
+      
+      let html = `<table class="pub-tt-table"><thead><tr><th>Day</th>`;
+      for(let i=1; i<=9; i++) {
+        html += `<th>Period ${i}</th>`;
+      }
+      html += `</tr></thead><tbody>`;
+      
+      days.forEach(day => {
+        const daySlots = clsList.filter(t => String(t.day) === day);
+        html += `<tr><td style="font-weight:700;color:var(--accent-teal);text-align:left;padding-left:1.25rem;">${day}</td>`;
+        for(let p=1; p<=9; p++) {
+          const slot = daySlots.find(t => String(t.period) === String(p) || String(t.start_time) === String(p));
+          html += slot ? `<td><span class="tt-subject-badge">${slot.subject}</span><br><small style="color:var(--text-muted);font-size:.68rem;">${slot.teacher}</small></td>` : `<td><span class="tt-free">—</span></td>`;
+        }
+        html += `</tr>`;
+      });
+      html += `</tbody></table>`;
+      wrap.innerHTML = html;
+    });
+  },
+  async lookupResult() {
+    const sid = document.getElementById('pubResultID').value.trim();
+    const sem = document.getElementById('pubResultSem').value;
+    const out = document.getElementById('pubResultOutput');
+    if (!sid) { out.innerHTML = '<p style="color:var(--danger);font-size:.82rem;margin-top:.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Please enter a Student ID.</p>'; return; }
+    out.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);font-size:.82rem;"><i class="fa-solid fa-spinner fa-spin"></i> Looking up…</div>';
+    
+    const students = await db.get('students');
+    const student = students.find(s => s.student_id.toUpperCase() === sid.toUpperCase());
+    const results = await db.get('results');
+    let myRes = results.filter(r => r.student_id.toUpperCase() === sid.toUpperCase());
+    if (sem !== 'all') myRes = myRes.filter(r => String(r.semester) === String(sem));
+    
+    if (!myRes.length) { out.innerHTML = `<div class="lookup-result-card" style="border-color:rgba(232,107,138,.3);"><p style="color:var(--danger);"><i class="fa-solid fa-circle-xmark"></i> No results found for ID: <strong>${sid}</strong></p><p style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem;">Check the ID or contact the school office.</p></div>`; return; }
+    
+    let sm = 0, st = 0, gp = 0;
+    myRes.forEach(r => { sm += Number(r.marks); st += Number(r.total || 100); let g = 4; if (Number(r.marks) < 90) g = 3.7; if (Number(r.marks) < 85) g = 3.3; if (Number(r.marks) < 80) g = 3; if (Number(r.marks) < 70) g = 2; gp += g; });
+    const cgpa = (gp / myRes.length).toFixed(2), perc = (sm / st * 100).toFixed(1);
+    
+    out.innerHTML = `
+      <div class="lookup-result-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+          <div>
+            <div style="font-weight:700;font-size:1.05rem;">${student ? student.name : sid}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);">${sid}${student ? ' · Class ' + student.class + ' Sec ' + student.section : ''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:var(--accent-teal);">CGPA ${cgpa}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);">Average: ${perc}%</div>
+          </div>
+        </div>
+        ${myRes.map(r => `
+          <div class="lookup-subject-row">
+            <div><div class="lookup-subject-name">${r.subject}</div><div style="font-size:.7rem;color:var(--text-muted);">${r.semester}</div><div class="lookup-progress"><div class="lookup-progress-fill" style="width:${r.percentage || r.marks}%;"></div></div></div>
+            <div style="text-align:right;min-width:80px;"><div class="lookup-grade-badge">${r.grade || 'A'}</div><div style="font-size:.72rem;color:var(--text-muted);">${r.marks}/${r.total || 100} · ${r.percentage || r.marks}%</div></div>
+          </div>
+        `).join('')}
+        <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid rgba(79,195,195,.2);font-size:.72rem;color:var(--text-muted);text-align:center;">Results are auto-computed. Contact school for official transcript.</div>
+      </div>
+    `;
+  }
+};
+
+/* ═══════════════════════════════════════════
+   GLOBAL UI ENGINE
+═══════════════════════════════════════════ */
+const appUI = {
+  currentModule: '', currentUser: null,
+  showToast(msg, type = 'success') {
+    const c = document.getElementById('toastContainer'), t = document.createElement('div');
+    t.className = 'toast ' + type;
+    const icons = { success: 'fa-circle-check', danger: 'fa-triangle-exclamation', warning: 'fa-circle-exclamation' };
+    t.innerHTML = `<div style="display:flex;align-items:center;gap:.55rem;"><i class="fa-solid ${icons[type] || icons.success}" style="font-size:1rem;"></i><span style="font-size:.8rem;">${msg}</span></div><button style="color:var(--text-muted);padding:0;font-size:.85rem;" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>`;
+    c.appendChild(t); setTimeout(() => t.remove(), 4000);
+  },
+  switchView(id) {
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+    const v = document.getElementById(id); if (v) v.classList.add('active');
+    if (id === 'public-view') { publicPortal.show('home'); }
+  },
+  toggleSidebar() { const s = document.getElementById('appSidebar'), o = document.getElementById('mobileOverlay'); s.classList.toggle('open'); o.classList.toggle('active'); },
+  closeSidebar() { document.getElementById('appSidebar').classList.remove('open'); document.getElementById('mobileOverlay').classList.remove('active'); },
+  openModal(id) { document.getElementById(id).classList.add('active'); },
+  closeModal(id) { document.getElementById(id).classList.remove('active'); },
+  buildNav(role) {
+    const m = document.getElementById('sidebarMenu'); m.innerHTML = '';
+    const items = role === 'student' ? [
+      { label: 'Portal' }, { name: 'Dashboard', icon: 'fa-gauge', t: 'student-dashboard' }, { name: 'Profile', icon: 'fa-user-graduate', t: 'student-profile' },
+      { label: 'Records' }, { name: 'Attendance', icon: 'fa-calendar-check', t: 'student-attendance' }, { name: 'Fees', icon: 'fa-file-invoice-dollar', t: 'student-fees' },
+      { name: 'Results', icon: 'fa-award', t: 'student-results' }, { name: 'Timetable', icon: 'fa-table-cells', t: 'student-timetable' },
+      { label: 'Docs' }, { name: 'Certificates', icon: 'fa-file-signature', t: 'student-certificates' }, { name: 'Notices', icon: 'fa-bullhorn', t: 'student-notices' }
+    ] : [
+      { label: 'Admin' }, { name: 'Dashboard', icon: 'fa-chart-pie', t: 'admin-dashboard' }, { name: 'Students', icon: 'fa-users', t: 'admin-students' },
+      { label: 'Academic' }, { name: 'Attendance', icon: 'fa-user-check', t: 'admin-attendance' }, { name: 'Fees', icon: 'fa-receipt', t: 'admin-fees' },
+      { name: 'Results', icon: 'fa-square-poll-vertical', t: 'admin-results' }, { name: 'Timetable', icon: 'fa-calendar-day', t: 'admin-timetable' },
+      { label: 'Manage' }, { name: 'Notices', icon: 'fa-thumbtack', t: 'admin-notices' }, { name: 'Certificates', icon: 'fa-stamp', t: 'admin-certificates' }
+    ];
+    items.forEach(it => {
+      const li = document.createElement('li');
+      if (it.label) { li.className = 'menu-label'; li.innerText = it.label; }
+      else { li.className = 'menu-item'; li.innerHTML = `<a href="#" class="menu-link" data-t="${it.t}" onclick="event.preventDefault();appUI.loadModule('${it.t}')"><i class="fa-solid ${it.icon}"></i><span>${it.name}</span></a>`; }
+      m.appendChild(li);
+    });
+  },
+  loadModule(t) {
+    this.currentModule = t;
+    document.querySelectorAll('.menu-link').forEach(l => { l.classList.toggle('active', l.getAttribute('data-t') === t); });
+    this.closeSidebar();
+    const body = document.getElementById('appContentBody'); body.innerHTML = '';
+    const tpl = document.getElementById('tpl-' + t);
+    if (tpl) { body.appendChild(tpl.content.cloneNode(true)); this._trigger(t); }
+    else body.innerHTML = '<div class="empty-state"><i class="fa-solid fa-screwdriver-wrench"></i><p>Module not found: ' + t + '</p></div>';
+  },
+  _trigger(t) {
+    if (t.startsWith('student-')) studentApp.init(t.replace('student-', ''));
+    else if (t.startsWith('admin-')) adminApp.init(t.replace('admin-', ''));
+  },
+  handleGlobalSearch(q) {
+    q = q.toLowerCase().trim(); if (!q) return;
+    if (this.currentUser?.role === 'admin') { if (this.currentModule !== 'admin-students') this.loadModule('admin-students'); const s = document.getElementById('admStudSearch'); if (s) { s.value = q; adminApp.filterStudents(); } }
+  }
+};
+
+/* ═══════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════ */
+const authApp = {
+  role: 'student',
+  initFromSession() { const s = sessionStorage.getItem('erp_user'); if (s) this._session(JSON.parse(s)); },
+  switchAuthTab(el, role) {
+    this.role = role;
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active')); el.classList.add('active');
+    const e = document.getElementById('loginEmail'), p = document.getElementById('loginPassword');
+    if (role === 'admin') { e.value = 'admin@smartschool.in'; p.value = 'admin123'; }
+    else { e.value = ''; p.value = ''; }
+  },
+  togglePass(icon, id) { const f = document.getElementById(id); f.type = f.type === 'password' ? 'text' : 'password'; icon.className = f.type === 'password' ? 'fa-regular fa-eye toggle-password' : 'fa-regular fa-eye-slash toggle-password'; },
+  showRegisterForm() { document.getElementById('loginFormContainer').style.display = 'none'; document.getElementById('registerFormContainer').style.display = 'block'; },
+  showLoginForm() { document.getElementById('registerFormContainer').style.display = 'none'; document.getElementById('loginFormContainer').style.display = 'block'; },
+  async handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim(), pass = document.getElementById('loginPassword').value;
+    let user = { email, name: email.split('@')[0], role: this.role };
+    if (this.role === 'admin') { 
+      if (pass !== 'admin123' && pass.length < 4) { appUI.showToast('Invalid credentials', 'danger'); return; } 
+      user.name = 'Admin'; 
+    }
+    else {
+      const list = await db.get('students');
+      const f = list.find(s => s.email && s.email.toLowerCase() === email.toLowerCase());
+      if (f) { user.student_id = f.student_id; user.name = f.name; }
+      else { appUI.showToast('Student account not found in database', 'danger'); return; }
+    }
+    if (document.getElementById('rememberMe').checked) sessionStorage.setItem('erp_user', JSON.stringify(user));
+    this._session(user);
+  },
+  async handleRegister(e) {
+    e.preventDefault();
+    const name = document.getElementById('regName').value.trim(), email = document.getElementById('regEmail').value.trim(), role = document.getElementById('regRole').value;
+    if (role === 'student') {
+       const nid = 'STU' + Date.now().toString().slice(-6); 
+       await db.insert('students', { student_id: nid, name, email, class: '10', section: 'A', roll_no: '' + Math.floor(Math.random() * 50 + 10), dob: '2010-01-01', gender: 'Other', address: 'Online' }); 
+       appUI.showToast('Account created!'); 
+       this._session({ email, name, role, student_id: nid });
+    } else {
+       appUI.showToast('Admin accounts must be created by superuser.', 'warning');
+    }
+  },
+  _session(user) {
+    appUI.currentUser = user;
+    document.getElementById('sidebarUserName').innerText = user.name;
+    document.getElementById('sidebarUserRole').innerText = user.role === 'admin' ? 'Administrator' : 'Student';
+    document.getElementById('sidebarAvatar').innerText = user.name.charAt(0).toUpperCase();
+    appUI.buildNav(user.role); appUI.switchView('main-app-view');
+    appUI.loadModule(user.role === 'admin' ? 'admin-dashboard' : 'student-dashboard');
+    appUI.showToast('Welcome, ' + user.name + '!');
+  },
+  logout() { sessionStorage.removeItem('erp_user'); appUI.currentUser = null; appUI.switchView('public-view'); publicPortal.show('home'); appUI.showToast('Logged out', 'warning'); }
+};
+
+/* ═══════════════════════════════════════════
+   STUDENT APP
+═══════════════════════════════════════════ */
+const studentApp = {
+  async init(mod) {
+    const user = appUI.currentUser, sid = user?.student_id;
+    document.querySelectorAll('.inject-sname').forEach(el => el.innerText = user?.name || 'Student');
+    const m = {
+      'dashboard': () => this.dash(sid), 'attendance': () => this.att(sid), 'fees': () => this.fees(sid),
+      'results': () => this.results(sid, 'all'), 'timetable': () => this.tt(), 'notices': () => this.notices(),
+      'profile': () => this.profile(sid), 'certificates': () => {}
+    };
+    if (m[mod]) m[mod]();
+  },
+  async dash(sid) {
+    const att = await db.get('attendance'), my = att.filter(a => String(a.student_id) === String(sid)), pr = my.filter(a => a.status === 'Present').length;
+    const el = document.getElementById('stDashAtt'); if (el) el.innerText = (my.length ? (pr / my.length * 100).toFixed(1) : 0) + '%';
+    const fees = await db.get('fees'), pend = fees.filter(f => String(f.student_id) === String(sid) && f.status === 'unpaid').reduce((s, f) => s + Number(f.amount), 0);
+    const fe = document.getElementById('stDashFees'); if (fe) fe.innerText = '₹' + pend.toFixed(2);
+    const res = await db.get('results'), myR = res.filter(r => String(r.student_id) === String(sid));
+    let gp = 0; myR.forEach(r => { let g = 4; if (Number(r.marks) < 90) g = 3.7; if (Number(r.marks) < 85) g = 3.3; if (Number(r.marks) < 80) g = 3; if (Number(r.marks) < 70) g = 2; gp += g; });
+    const ge = document.getElementById('stDashGPA'); if (ge) ge.innerText = myR.length ? (gp / myR.length).toFixed(2) : '—';
+    const tt = await db.get('timetable'), today = tt.filter(t => t.day === 'Monday').slice(0, 4);
+    const tc = document.getElementById('stDashTT');
+    if (tc) tc.innerHTML = today.map(t => `<div style="background:var(--primary-light);border:1px solid rgba(79,195,195,.25);border-radius:var(--radius-sm);padding:.65rem;text-align:center;"><div style="font-weight:700;font-size:.8rem;color:var(--accent-teal);">${t.subject}</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.2rem;">${t.teacher}</div><div style="font-size:.65rem;color:var(--text-bright);margin-top:.25rem;">Period ${t.period || t.start_time}</div></div>`).join('') || '<p style="color:var(--text-muted);font-size:.82rem;">No classes today.</p>';
+    const notices = await db.get('notices'), nc = document.getElementById('stDashNotices');
+    if (nc) nc.innerHTML = notices.slice(0, 3).map(n => `<div class="notice-card ${n.type}"><div class="notice-header"><span class="notice-title">${n.title}</span></div><p class="notice-desc">${(n.description || '').substring(0, 80)}…</p></div>`).join('');
+  },
+  async att(sid) {
+    const att = await db.get('attendance'), my = att.filter(a => String(a.student_id) === String(sid)).sort((a, b) => b.date.localeCompare(a.date));
+    const pr = my.filter(a => a.status === 'Present').length;
+    const tag = document.getElementById('attPercentTag'); if (tag) tag.innerText = my.length ? Math.round(pr / my.length * 100) + '%' : '—';
+    const body = document.getElementById('studentAttTableBody'); if (!body) return;
+    body.innerHTML = my.map(a => `<tr><td style="font-weight:600;">${a.date}</td><td>${new Date(a.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })}</td><td><span class="status-badge status-${a.status === 'Present' ? 'success' : 'danger'}">${a.status}</span></td><td style="color:var(--text-muted);font-size:.75rem;">Auto-logged</td></tr>`).join('') || '<tr><td colspan="4" class="empty-state">No records found.</td></tr>';
+  },
+  async fees(sid) {
+    const list = await db.get('fees'), my = list.filter(f => String(f.student_id) === String(sid));
+    const paid = my.filter(f => f.status === 'paid').reduce((s, i) => s + Number(i.amount), 0);
+    const due = my.filter(f => f.status === 'unpaid').reduce((s, i) => s + Number(i.amount), 0);
+    const c = document.getElementById('stFeeCards');
+    if (c) c.innerHTML = `<div class="stat-card" style="color:var(--success);"><div class="stat-info"><div class="stat-label">Paid</div><div class="stat-value">₹${paid.toFixed(2)}</div></div><div class="stat-icon" style="background:var(--success-light);"><i class="fa-solid fa-circle-check"></i></div></div><div class="stat-card" style="color:var(--danger);"><div class="stat-info"><div class="stat-label">Outstanding</div><div class="stat-value">₹${due.toFixed(2)}</div></div><div class="stat-icon" style="background:var(--danger-light);"><i class="fa-solid fa-exclamation-circle"></i></div></div>`;
+    const body = document.getElementById('stFeeBody'); if (!body) return;
+    body.innerHTML = my.map(f => `<tr><td style="font-weight:600;">${f.fee_type}</td><td>₹${Number(f.amount).toFixed(2)}</td><td>${f.due_date || '—'}</td><td><span class="status-badge status-${f.status === 'paid' ? 'success' : 'warning'}">${f.status}</span></td><td>${f.status === 'paid' ? `<button class="btn btn-sm btn-outline" onclick="studentApp.printReceipt('${f.fee_type}',${f.amount})"><i class="fa-solid fa-print"></i> Receipt</button>` : `<button class="btn btn-sm btn-primary" onclick="studentApp.simulatePay()"><i class="fa-solid fa-credit-card"></i> Pay</button>`}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">No records</td></tr>';
+  },
+  async simulatePay() {
+    const sid = appUI.currentUser?.student_id;
+    if (!confirm('Mark all outstanding fees as paid?')) return;
+    const list = await db.get('fees');
+    for (const f of list) if (String(f.student_id) === String(sid) && f.status === 'unpaid') await db.update('fees', 'id', f.id, { status: 'paid' });
+    appUI.showToast('Payment successful!'); this.fees(sid);
+  },
+  printReceipt(type, amt) {
+    const u = appUI.currentUser, t = document.getElementById('certPrintTarget'); if (!t) return;
+    t.innerHTML = `<div class="printable-receipt" style="font-family:monospace;"><div style="text-align:center;border-bottom:2px solid #333;padding-bottom:1rem;margin-bottom:1rem;"><h2>SMART SCHOOL ERP</h2><p>Payment Receipt · TXN-${Date.now().toString().slice(-6)}</p></div><p><strong>Student:</strong> ${u?.name || 'Student'}</p><p><strong>ID:</strong> ${u?.student_id || '—'}</p><p><strong>Type:</strong> ${type}</p><p><strong>Amount:</strong> ₹${Number(amt).toFixed(2)}</p><p><strong>Status:</strong> ✓ PAID</p></div>`;
+    appUI.openModal('modalCertDisplay');
+  },
+  async results(sid, sem) {
+    const res = await db.get('results'); let my = res.filter(r => String(r.student_id) === String(sid));
+    if (sem && sem !== 'all') my = my.filter(r => String(r.semester) === String(sem));
+    let sm = 0, st = 0, gp = 0; my.forEach(r => { sm += Number(r.marks); st += Number(r.total || 100); let g = 4; if (Number(r.marks) < 90) g = 3.7; if (Number(r.marks) < 85) g = 3.3; if (Number(r.marks) < 80) g = 3; if (Number(r.marks) < 70) g = 2; gp += g; });
+    const cgpa = my.length ? (gp / my.length).toFixed(2) : '—', perc = st ? (sm / st * 100).toFixed(1) + '%' : '—';
+    const ge = document.getElementById('cgpaVal'), pe = document.getElementById('percVal'); if (ge) ge.innerText = cgpa; if (pe) pe.innerText = perc;
+    const body = document.getElementById('stResultBody'); if (!body) return;
+    body.innerHTML = my.map(r => `<tr><td style="font-weight:600;"><i class="fa-solid fa-book" style="color:var(--accent-amber);margin-right:4px;"></i>${r.subject}</td><td><span class="status-badge status-info">${r.semester || 'Term 2'}</span></td><td><strong>${r.marks}</strong></td><td>${r.total || 100}</td><td><span class="status-badge status-success">${r.grade || 'A'}</span></td><td><div style="display:flex;align-items:center;gap:.4rem;"><span>${r.percentage || r.marks}%</span><div style="flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;min-width:60px;overflow:hidden;"><div style="width:${r.percentage || r.marks}%;height:100%;background:linear-gradient(to right,var(--accent-teal),var(--accent-amber));"></div></div></div></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No results</td></tr>';
+  },
+  filterResults(v) { this.results(appUI.currentUser?.student_id, v); },
+  printMarksheet() {
+    const sid = appUI.currentUser?.student_id, name = appUI.currentUser?.name || 'Student', t = document.getElementById('certPrintTarget'); if (!t) return;
+    db.get('results').then(list => {
+      const my = list.filter(r => String(r.student_id) === String(sid));
+      const rows = my.map(r => `<tr><td style="border:1px solid #ddd;padding:5px;">${r.subject}</td><td style="border:1px solid #ddd;padding:5px;">${r.marks}/${r.total || 100}</td><td style="border:1px solid #ddd;padding:5px;">${r.grade || 'A'}</td></tr>`).join('');
+      t.innerHTML = `<div class="printable-receipt"><div style="text-align:center;border-bottom:2px solid #333;padding-bottom:1rem;margin-bottom:1rem;"><h2>ACADEMIC TRANSCRIPT</h2><p>Smart School ERP</p></div><p><strong>Student:</strong> ${name} (${sid})</p><table style="width:100%;margin-top:.75rem;border-collapse:collapse;font-size:.85rem;"><thead><tr style="background:#f1f1f1;"><th style="border:1px solid #ddd;padding:6px;">Subject</th><th style="border:1px solid #ddd;padding:6px;">Marks</th><th style="border:1px solid #ddd;padding:6px;">Grade</th></tr></thead><tbody>${rows || '<tr><td colspan="3">No data</td></tr>'}</tbody></table></div>`;
+      appUI.openModal('modalCertDisplay');
+    });
+  },
+  async tt() {
+    const tc = document.getElementById('stTTContainer'); if (!tc) return;
+    const list = await db.get('timetable'), days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    let h = '<div class="timetable-cell timetable-header" style="min-height:38px;">Day</div>';
+    for (let i = 1; i <= 9; i++) h += `<div class="timetable-cell timetable-header" style="min-height:38px;">P${i}</div>`;
+    
+    days.forEach(d => { 
+      h += `<div class="timetable-cell timetable-header" style="font-weight:700;color:var(--text-bright);">${d.slice(0, 3)}</div>`; 
+      const ds = list.filter(t => t.day === d); 
+      for (let i = 1; i <= 9; i++) { 
+        const s = ds.find(t => String(t.period) === String(i) || String(t.start_time) === String(i)); 
+        h += s ? `<div class="timetable-cell"><div class="subject-pill">${s.subject}</div><span class="teacher-name">${s.teacher}</span></div>` : `<div class="timetable-cell" style="color:rgba(255,255,255,.15);">—</div>`; 
+      } 
+    });
+    tc.innerHTML = h;
+  },
+  async notices() {
+    const list = await db.get('notices'), w = document.getElementById('stNoticeContainer'); if (!w) return;
+    w.innerHTML = list.map(n => `<div class="notice-card ${n.type}"><div class="notice-header"><span class="notice-title"><i class="fa-solid fa-thumbtack" style="color:var(--accent-teal);margin-right:4px;"></i>${n.title}</span><span class="status-badge status-${n.type === 'high' ? 'danger' : n.type === 'medium' ? 'warning' : 'success'}">${n.type}</span></div><p style="font-size:.7rem;color:var(--text-muted);margin-bottom:.4rem;">Posted: ${new Date(n.created_at).toLocaleDateString() || '—'} · Expires: ${n.expiry_date || '—'}</p><p class="notice-desc">${n.description}</p></div>`).join('') || '<div class="empty-state">No notices</div>';
+  },
+  async profile(sid) {
+    const list = await db.get('students'), s = list.find(x => String(x.student_id) === String(sid)) || {name: 'Unknown', student_id: sid};
+    document.getElementById('profName').innerText = s.name; document.getElementById('profID').innerText = s.student_id;
+    document.getElementById('profEmail').value = s.email || ''; document.getElementById('profPhone').value = s.phone || '';
+    document.getElementById('profClass').value = 'Class ' + (s.class || '10'); document.getElementById('profSection').value = 'Section ' + (s.section || 'A');
+    document.getElementById('profRoll').value = s.roll_no || ''; document.getElementById('profDOB').value = s.dob || '';
+  },
+  genCert(type) {
+    const u = appUI.currentUser, t = document.getElementById('certPrintTarget'); if (!t) return;
+    
+    t.innerHTML = `
+      <div class="cert-container">
+        <div class="cert-content">
+          <div class="cert-header">
+            <div class="cert-logo"><i class="fa-solid fa-building-columns"></i></div>
+            <h1 class="cert-school-name">SmartSchool India</h1>
+            <div class="cert-sub">Affiliated to CBSE, New Delhi. Affiliation No. 1234567<br>Sector 14, Education City, New Delhi - 110001</div>
+          </div>
+          <div class="cert-title">${type.toUpperCase()}</div>
+          <div class="cert-body">
+            This is to certify that Master/Miss <span class="cert-name">${u?.name || 'Student'}</span>,
+            Registration No. <span class="cert-name">${u?.student_id || 'STU-XXXXXX'}</span>,
+            is/was a bonafide student of this institution. To the best of our knowledge, their conduct and character have been satisfactory.
+          </div>
+          <div class="cert-footer">
+            <div style="text-align:left;">
+               <div class="cert-qr"></div>
+               <div style="font-size:0.75rem; margin-top:5px; color:#475569;">Verification Scan</div>
+            </div>
+            <div>
+               <div style="font-size:0.9rem; margin-bottom:10px; color:#475569;">Date: ${new Date().toLocaleDateString('en-IN')}</div>
+               <div class="cert-signature">Principal Signature</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    appUI.openModal('modalCertDisplay');
+  }
+};
+
+/* ═══════════════════════════════════════════
+   ADMIN APP
+═══════════════════════════════════════════ */
+const adminApp = {
+  cached: [],
+  async init(mod) {
+    const m = {
+      'dashboard': () => this.dash(), 'students': () => this.loadStudents(), 'attendance': () => this.loadAttGrid(),
+      'fees': () => this.loadFees(), 'results': () => this.loadResults(), 'timetable': () => this.loadTT(),
+      'notices': () => this.loadNotices(), 'certificates': () => this.loadCerts()
+    };
+    if (m[mod]) m[mod]();
+  },
+  async dash() {
+    const s = await db.get('students'), f = await db.get('fees'), a = await db.get('attendance');
+    document.getElementById('adTotal').innerText = s.length;
+    const col = f.filter(x => x.status === 'paid').reduce((s, i) => s + Number(i.amount), 0);
+    const pen = f.filter(x => x.status === 'unpaid').reduce((s, i) => s + Number(i.amount), 0);
+    document.getElementById('adFeeCol').innerText = '₹' + col.toFixed(0); document.getElementById('adFeePend').innerText = '₹' + pen.toFixed(0);
+    const pr = a.filter(x => x.status === 'Present').length; document.getElementById('adAtt').innerText = (a.length ? (pr / a.length * 100).toFixed(1) : 0) + '%';
+    const tb = document.getElementById('adStudRows');
+    if (tb) tb.innerHTML = s.slice(0, 5).map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:600;">${x.student_id}</td><td><strong>${x.name}</strong></td><td>C${x.class}/${x.section}</td><td><button class="btn btn-sm btn-outline" onclick="adminApp.editStudent('${x.student_id}')"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteStudent('${x.student_id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    const n = await db.get('notices'), ns = document.getElementById('adNoticeStream');
+    if (ns) ns.innerHTML = n.slice(0, 3).map(x => `<div style="padding:.5rem;border-bottom:1px solid var(--lg-border);"><div style="display:flex;justify-content:space-between;align-items:center;"><strong style="font-size:.78rem;">${x.title}</strong><span class="status-badge status-${x.type === 'high' ? 'danger' : 'warning'}" style="font-size:.6rem;">${x.type}</span></div><p style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem;">${(x.description || '').substring(0, 65)}…</p></div>`).join('');
+  },
+  async loadStudents() { this.cached = await db.get('students'); this.filterStudents(); },
+  filterStudents() {
+    const q = (document.getElementById('admStudSearch')?.value || '').toLowerCase();
+    const fc = document.getElementById('admFilterClass')?.value || 'all';
+    const fs = document.getElementById('admFilterSec')?.value || 'all';
+    let f = this.cached;
+    if (q) f = f.filter(s => s.name.toLowerCase().includes(q) || s.student_id.toLowerCase().includes(q) || (s.father_name || '').toLowerCase().includes(q));
+    if (fc !== 'all') f = f.filter(s => String(s.class) === String(fc)); 
+    if (fs !== 'all') f = f.filter(s => String(s.section) === String(fs));
+    
+    const tb = document.getElementById('admStudBody'); if (!tb) return;
+    tb.innerHTML = f.map(s => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:700;">${s.student_id}</td><td><div style="font-weight:600;">${s.name}</div><div style="font-size:.7rem;color:var(--text-muted);">${s.email || ''}</div></td><td><span class="status-badge status-info">C${s.class}</span><div style="font-size:.7rem;color:var(--text-muted);">Sec ${s.section} / Roll ${s.roll_no}</div></td><td style="font-size:.8rem;color:var(--text-muted);">${s.father_name || '—'}</td><td style="font-size:.8rem;">${s.phone || '—'}</td><td><div style="display:flex;gap:.2rem;"><button class="btn btn-sm btn-outline" onclick="adminApp.editStudent('${s.student_id}')"><i class="fa-solid fa-pen"></i></button><button class="btn btn-sm btn-danger" onclick="adminApp.deleteStudent('${s.student_id}')"><i class="fa-solid fa-trash"></i></button></div></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No students found</td></tr>';
+  },
+  openAddStudentModal() { document.getElementById('crudOrigId').value = ''; document.getElementById('stuModalTitle').innerText = 'Add Student'; document.getElementById('crudStuID').value = 'STU20260' + (Math.floor(Math.random() * 80) + 10); ['crudName', 'crudFather', 'crudEmail', 'crudPhone', 'crudRoll', 'crudAddr'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); appUI.openModal('modalAddStudent'); },
+  async editStudent(sid) {
+    const t = this.cached.find(s => String(s.student_id) === String(sid)); if (!t) return;
+    document.getElementById('crudOrigId').value = t.student_id; document.getElementById('stuModalTitle').innerText = 'Edit: ' + t.name;
+    document.getElementById('crudStuID').value = t.student_id; document.getElementById('crudName').value = t.name; document.getElementById('crudFather').value = t.father_name || '';
+    document.getElementById('crudEmail').value = t.email || ''; document.getElementById('crudPhone').value = t.phone || ''; document.getElementById('crudClass').value = t.class || '10';
+    document.getElementById('crudSection').value = t.section || 'A'; document.getElementById('crudRoll').value = t.roll_no || ''; document.getElementById('crudDOB').value = t.dob || '';
+    document.getElementById('crudGender').value = t.gender || 'Male'; document.getElementById('crudAddr').value = t.address || '';
+    appUI.openModal('modalAddStudent');
+  },
+  async saveStudent(e) {
+    e.preventDefault(); const orig = document.getElementById('crudOrigId').value;
+    const p = { student_id: document.getElementById('crudStuID').value.trim(), name: document.getElementById('crudName').value.trim(), father_name: document.getElementById('crudFather').value.trim(), email: document.getElementById('crudEmail').value.trim(), phone: document.getElementById('crudPhone').value.trim(), class: document.getElementById('crudClass').value, section: document.getElementById('crudSection').value, roll_no: document.getElementById('crudRoll').value.trim(), dob: document.getElementById('crudDOB').value, gender: document.getElementById('crudGender').value, address: document.getElementById('crudAddr').value.trim() };
+    if (orig) { await db.update('students', 'student_id', orig, p); appUI.showToast('Student updated'); }
+    else { await db.insert('students', p); appUI.showToast('Student enrolled'); }
+    appUI.closeModal('modalAddStudent'); this.loadStudents();
+  },
+  async deleteStudent(sid) { if (!confirm('Delete student ' + sid + '?')) return; await db.remove('students', 'student_id', sid); appUI.showToast('Deleted', 'danger'); this.loadStudents(); },
+  async loadAttGrid() {
+    const date = document.getElementById('admAttDate')?.value || '2026-03-15', cls = document.getElementById('admAttClass')?.value || '10';
+    const students = await db.get('students'), inCls = students.filter(s => String(s.class) === String(cls));
+    const att = await db.get('attendance'), dayLogs = att.filter(a => a.date === date);
+    const tb = document.getElementById('admAttBody'); if (!tb) return;
+    tb.innerHTML = inCls.map(s => { const ex = dayLogs.find(a => String(a.student_id) === String(s.student_id)), pres = ex ? ex.status === 'Present' : true; return `<tr class="att-row" data-sid="${s.student_id}"><td style="font-family:monospace;font-weight:700;color:var(--accent-teal);">${s.student_id}</td><td><strong>${s.name}</strong><br><small style="color:var(--text-muted);">Roll ${s.roll_no}</small></td><td><select class="att-sel" style="width:140px;font-weight:600;"><option value="Present" ${pres ? 'selected' : ''}>✓ Present</option><option value="Absent" ${!pres ? 'selected' : ''}>✕ Absent</option></select></td></tr>`; }).join('') || '<tr><td colspan="3" class="empty-state">No students found in Class ' + cls + '</td></tr>';
+  },
+  bulkMark(st) { document.querySelectorAll('.att-sel').forEach(s => s.value = st); appUI.showToast('All set to ' + st, 'warning'); },
+  async saveAtt() {
+    const date = document.getElementById('admAttDate').value, rows = document.querySelectorAll('.att-row'); let c = 0;
+    const existing = await db.get('attendance');
+    for (const r of rows) { 
+      const sid = r.getAttribute('data-sid');
+      const stat = r.querySelector('.att-sel').value;
+      const ex = existing.find(a => String(a.student_id) === String(sid) && a.date === date);
+      if (ex) { await db.update('attendance', 'id', ex.id, {status: stat}); }
+      else { await db.insert('attendance', { student_id: sid, date, status: stat }); }
+      c++; 
+    }
+    appUI.showToast(c + ' records saved!');
+  },
+  async loadFees() {
+    const f = await db.get('fees'), tb = document.getElementById('admFeeBody'); if (!tb) return;
+    tb.innerHTML = f.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);font-weight:700;">${x.student_id}</td><td style="font-weight:600;">${x.fee_type}</td><td><strong>₹${Number(x.amount).toFixed(2)}</strong></td><td>${x.due_date || '—'}</td><td><span class="status-badge status-${x.status === 'paid' ? 'success' : 'warning'}">${x.status}</span></td><td><button class="btn btn-sm btn-outline" onclick="adminApp.toggleFee('${x.id}','${x.status}')">Toggle</button> <button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteFee('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No fees</td></tr>';
+  },
+  async saveFee(e) { e.preventDefault(); await db.insert('fees', { student_id: document.getElementById('feeStudID').value.trim(), fee_type: document.getElementById('feeType').value, amount: document.getElementById('feeAmt').value, due_date: document.getElementById('feeDue').value, status: document.getElementById('feeStat').value }); appUI.showToast('Fee added'); appUI.closeModal('modalAddFee'); this.loadFees(); },
+  async toggleFee(id, cur) { if(!id) return; await db.update('fees', 'id', id, { status: cur === 'paid' ? 'unpaid' : 'paid' }); appUI.showToast('Status toggled'); this.loadFees(); },
+  async deleteFee(id) { if(!id) return; await db.remove('fees', 'id', id); appUI.showToast('Fee deleted', 'danger'); this.loadFees(); },
+  async loadResults() {
+    const r = await db.get('results'), tb = document.getElementById('admResultBody'); if (!tb) return;
+    tb.innerHTML = r.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);">${x.student_id}</td><td style="font-weight:600;">${x.subject}</td><td><span class="status-badge status-info">${x.semester || 'Term 2'}</span></td><td><strong>${x.marks}</strong>/${x.total || 100}</td><td>${x.percentage || x.marks}%</td><td><span class="status-badge status-success">${x.grade || 'A'}</span></td><td><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteResult('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="7" class="empty-state">No results</td></tr>';
+  },
+  async saveResult(e) {
+    e.preventDefault(); const marks = Number(document.getElementById('resMarks').value), total = 100, pct = Math.round(marks / total * 100);
+    let grade = 'A+'; if (pct < 90) grade = 'A'; if (pct < 80) grade = 'B+'; if (pct < 70) grade = 'B'; if (pct < 60) grade = 'C'; if (pct < 50) grade = 'D';
+    await db.insert('results', { student_id: document.getElementById('resStudID').value.trim(), subject: document.getElementById('resSubject').value, semester: document.getElementById('resSem').value, marks, total, percentage: pct, grade });
+    appUI.showToast('Result saved: Grade ' + grade); appUI.closeModal('modalAddResult'); this.loadResults();
+  },
+  async deleteResult(id) { if(!id) return; await db.remove('results', 'id', id); appUI.showToast('Result deleted', 'danger'); this.loadResults(); },
+  async loadTT() {
+    const t = await db.get('timetable'), tb = document.getElementById('admTTBody'); if (!tb) return;
+    tb.innerHTML = t.map(x => `<tr><td><span class="status-badge status-info">C${x.class}</span></td><td style="font-weight:600;">${x.day}</td><td style="color:var(--accent-teal);font-weight:600;">${x.subject}</td><td>${x.teacher}</td><td><span class="status-badge status-warning">Period ${x.period || x.start_time}</span></td><td><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteTT('${x.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">No entries</td></tr>';
+  },
+  async saveTimetable(e) { e.preventDefault(); await db.insert('timetable', { class: document.getElementById('ttClass').value, section: 'A', day: document.getElementById('ttDay').value, subject: document.getElementById('ttSubj').value.trim(), teacher: document.getElementById('ttTeacher').value.trim(), period: document.getElementById('ttPeriod').value }); appUI.showToast('Slot added'); appUI.closeModal('modalAddTimetable'); this.loadTT(); },
+  async deleteTT(id) { if(!id) return; await db.remove('timetable', 'id', id); appUI.showToast('Slot removed', 'danger'); this.loadTT(); },
+  async loadNotices() {
+    const n = await db.get('notices'), w = document.getElementById('admNoticeBody'); if (!w) return;
+    w.innerHTML = n.map(x => `<div class="notice-card ${x.type}"><div class="notice-header"><span class="notice-title" style="font-weight:700;">${x.title}</span><div><span class="status-badge status-${x.type === 'high' ? 'danger' : x.type === 'medium' ? 'warning' : 'success'}" style="margin-right:.35rem;">${x.type}</span><button class="btn btn-sm btn-outline" style="color:var(--danger);" onclick="adminApp.deleteNotice('${x.id}')"><i class="fa-solid fa-trash"></i></button></div></div><p style="font-size:.7rem;color:var(--text-muted);margin-bottom:.35rem;">Expires: ${x.expiry_date || '—'}</p><p class="notice-desc">${x.description}</p></div>`).join('') || '<div class="empty-state">No notices</div>';
+  },
+  async saveNotice(e) { e.preventDefault(); await db.insert('notices', { title: document.getElementById('notTitle').value.trim(), type: document.getElementById('notType').value, description: document.getElementById('notDesc').value.trim(), expiry_date: document.getElementById('notExpiry').value, created_at: new Date().toISOString().split('T')[0] }); appUI.showToast('Notice published!'); appUI.closeModal('modalAddNotice'); this.loadNotices(); },
+  async deleteNotice(id) { if(!id) return; await db.remove('notices', 'id', id); appUI.showToast('Deleted', 'danger'); this.loadNotices(); },
+  async loadCerts() {
+    const c = await db.get('certificates'), tb = document.getElementById('admCertBody'); if (!tb) return;
+    tb.innerHTML = c.map(x => `<tr><td style="font-family:monospace;color:var(--accent-teal);">${x.id}</td><td style="font-weight:600;">${x.student_id}</td><td><span class="status-badge status-info">${x.certificate_type}</span></td><td><span class="status-badge status-success"><i class="fa-solid fa-certificate"></i> Approved</span></td><td><button class="btn btn-sm btn-outline" onclick="studentApp.genCert('${x.certificate_type}')"><i class="fa-solid fa-eye"></i> View</button></td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">No certificates generated yet.</td></tr>';
+  },
+  exportToCSV(tbl) { db.get(tbl).then(l => { if (!l.length) { appUI.showToast('No data', 'warning'); return; } const h = Object.keys(l[0]).join(','); const r = l.map(i => Object.values(i).map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(',')).join('\n'); const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(h + '\n' + r); a.download = 'export_' + tbl + '_' + Date.now() + '.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); appUI.showToast('CSV exported!'); }); }
+};
+
+/* ═══════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async () => {
+  appUI.switchView('public-view');
+  publicPortal.show('home');
+  await publicPortal.boot();
+  authApp.initFromSession();
+});
+</script>
+</body>
+</html>

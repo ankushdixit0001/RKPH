@@ -38,15 +38,9 @@
                         <li><a href="#facilities">Facilities</a></li>
                         <li><a href="#admissions">Admissions</a></li>
                         <li class="dropdown">
-                            <a href="student_portal.html" class="dropdown-toggle">Student Portal <span class="badge">New</span> <i class="fas fa-chevron-down"></i></a>
+                            <a href="new.html" class="dropdown-toggle">Student Portal <span class="badge">New</span> <i class="fas fa-chevron-down"></i></a>
                             <ul class="dropdown-menu">
-                                <li><a href="student_portal.html#login"><i class="fas fa-sign-in-alt"></i> Student Login</a></li>
-                                <li><a href="student_portal.html#results"><i class="fas fa-chart-bar"></i> Results</a></li>
-                                <li><a href="student_portal.html#fees"><i class="fas fa-rupee-sign"></i> Fee Management</a></li>
-                                <li><a href="student_portal.html#attendance"><i class="fas fa-calendar-check"></i> Attendance</a></li>
-                                <li><a href="student_portal.html#portal"><i class="fas fa-th-large"></i> Student Portal</a></li>
-                                <li><a href="student_portal.html#certificates"><i class="fas fa-certificate"></i> Certificates</a></li>
-                                <li><a href="student_portal.html#timetable"><i class="fas fa-clock"></i> Time Table</a></li>
+                                <li><a href="new.html"><i class="fas fa-sign-in-alt"></i> Student Login</a></li>
                             </ul>
                         </li>
                         <li><a href="#gallery">Gallery</a></li>
@@ -320,7 +314,7 @@
                         <span><i class="fas fa-th-large"></i> Student Portal</span>
                     </div>
                 </div>
-                <a href="student_portal.html" class="btn-primary portal-cta-btn">
+                <a href="new.html" class="btn-primary portal-cta-btn">
                     <i class="fas fa-sign-in-alt"></i> Open Student Portal
                 </a>
             </div>
@@ -1344,42 +1338,7 @@
         URL.revokeObjectURL(url);
     }
 
-    /* ── Hidden Admin Gate ── */
-    (function(){
-      let _clicks = 0, _timer = null;
-      const gate = document.getElementById('adminGate');
-      if(!gate) return;
-
-      gate.addEventListener('click', function(){
-        _clicks++;
-        clearTimeout(_timer);
-        _timer = setTimeout(()=>{ _clicks=0; }, 600);
-        if(_clicks >= 3){
-          _clicks = 0;
-          clearTimeout(_timer);
-          const overlay = document.getElementById('adminAccessOverlay');
-          overlay.style.display = 'flex';
-          setTimeout(()=>document.getElementById('adminPassInput').focus(), 100);
-        }
-      });
-    })();
-
-    function verifyAdminAccess(){
-      const val = document.getElementById('adminPassInput').value;
-      const err = document.getElementById('adminPassErr');
-      // Same passphrase as admin panel login
-      if(val === 'rkph@admin2025'){
-        document.getElementById('adminAccessOverlay').style.display = 'none';
-        document.getElementById('adminPassInput').value = '';
-        err.style.display = 'none';
-        window.open('admin_panel.html','_blank');
-      } else {
-        err.style.display = 'block';
-        document.getElementById('adminPassInput').value = '';
-        document.getElementById('adminPassInput').focus();
-        setTimeout(()=>{ err.style.display='none'; }, 3000);
-      }
-    }
+    
     </script>
 </body>
 </html>
